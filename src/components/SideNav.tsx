@@ -1,0 +1,100 @@
+import { useState } from "react";
+import { X, Home, Newspaper, Users, Info, Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+interface SideNavProps {
+  isOpen: boolean;
+  onToggle: () => void;
+}
+
+const navItems = [
+  { title: "Home", icon: Home, href: "#home" },
+  { title: "News", icon: Newspaper, href: "#news" },
+  { title: "Members", icon: Users, href: "#members" },
+  { title: "About", icon: Info, href: "#about" },
+];
+
+export function SideNav({ isOpen, onToggle }: SideNavProps) {
+  const [activeSection, setActiveSection] = useState("home");
+
+  const handleNavClick = (href: string) => {
+    setActiveSection(href.replace("#", ""));
+    const element = document.querySelector(href);
+    element?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+          onClick={onToggle}
+        />
+      )}
+
+      {/* Side Navigation */}
+      <nav
+        className={cn(
+          "fixed top-0 right-0 h-full w-80 bg-card border-l border-border z-50 transition-transform duration-300 ease-in-out flex flex-col",
+          isOpen ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <h2 className="text-xl font-bold text-primary">Navigation</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            className="hover:bg-muted"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Navigation Items */}
+        <div className="flex-1 p-6 space-y-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeSection === item.href.replace("#", "");
+            return (
+              <button
+                key={item.title}
+                onClick={() => handleNavClick(item.href)}
+                className={cn(
+                  "w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-lg"
+                    : "hover:bg-muted text-foreground"
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="font-medium">{item.title}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-border">
+          <p className="text-sm text-muted-foreground text-center">
+            Advent Coalition © 2025
+          </p>
+        </div>
+      </nav>
+
+      {/* Toggle Button (fixed) */}
+      {!isOpen && (
+        <Button
+          onClick={onToggle}
+          size="icon"
+          className="fixed top-6 right-6 z-30 bg-primary hover:bg-primary/90 shadow-lg animate-glow"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+      )}
+    </>
+  );
+}
