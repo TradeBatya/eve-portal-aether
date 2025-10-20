@@ -51,14 +51,14 @@ export function AnimatedBackground() {
         const size = (1 - this.z / 1000) * this.size;
         const opacity = (1 - this.z / 1000) * 0.8;
 
-        ctx.fillStyle = `rgba(0, 212, 255, ${opacity})`;
+        ctx.fillStyle = `rgba(255, 165, 70, ${opacity})`;
         ctx.beginPath();
         ctx.arc(x, y, size, 0, Math.PI * 2);
         ctx.fill();
 
         // Add glow effect
         if (size > 0.5) {
-          ctx.fillStyle = `rgba(0, 212, 255, ${opacity * 0.3})`;
+          ctx.fillStyle = `rgba(255, 165, 70, ${opacity * 0.3})`;
           ctx.beginPath();
           ctx.arc(x, y, size * 2, 0, Math.PI * 2);
           ctx.fill();
@@ -75,7 +75,7 @@ export function AnimatedBackground() {
     // Animation loop
     let animationId: number;
     const animate = () => {
-      ctx.fillStyle = "rgba(14, 19, 29, 0.1)";
+      ctx.fillStyle = "rgba(18, 10, 8, 0.1)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       stars.forEach((star) => {
@@ -98,7 +98,7 @@ export function AnimatedBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 w-full h-full pointer-events-none z-0"
-      style={{ background: "linear-gradient(180deg, #0e131d 0%, #1a1f2e 50%, #0e131d 100%)" }}
+      style={{ background: "linear-gradient(180deg, #120a08 0%, #1f1210 50%, #120a08 100%)" }}
     />
   );
 }

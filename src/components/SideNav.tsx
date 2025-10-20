@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Home, Newspaper, Users, Info, Menu } from "lucide-react";
+import { X, Home, Newspaper, Users, Info, Menu, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -78,7 +78,15 @@ export function SideNav({ isOpen, onToggle }: SideNavProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-border">
+        <div className="p-6 border-t border-border space-y-4">
+          <Button 
+            disabled 
+            className="w-full flex items-center gap-2 cursor-not-allowed"
+            variant="default"
+          >
+            <LogIn className="h-5 w-5" />
+            <span>Authorize</span>
+          </Button>
           <p className="text-sm text-muted-foreground text-center">
             Advent Coalition © 2025
           </p>

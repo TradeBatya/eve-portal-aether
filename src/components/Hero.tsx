@@ -1,5 +1,4 @@
-import heroImage from "@/assets/hero-space.jpg";
-import logo from "@/assets/logo.png";
+import heroImage from "@/assets/hero-fleet.webp";
 import { Button } from "@/components/ui/button";
 
 export function Hero() {
@@ -18,12 +17,7 @@ export function Hero() {
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-6 text-center animate-fade-in">
-        <img
-          src={logo}
-          alt="Advent Coalition Logo"
-          className="w-32 h-32 mx-auto mb-8 animate-glow"
-        />
-        <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-6 bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
+        <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
           Advent Coalition
         </h1>
         <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
