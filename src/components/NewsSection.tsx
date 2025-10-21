@@ -1,46 +1,52 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "lucide-react";
-import fleetImage from "@/assets/fleet-ships.jpg";
-import stationImage from "@/assets/station.jpg";
+import fleetShips from "@/assets/fleet-ships.jpg";
+import heroFleet from "@/assets/hero-fleet.webp";
+import station from "@/assets/station.jpg";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translations } from "@/translations";
 
-const newsItems = [
+const getNewsItems = (t: any) => [
   {
     id: 1,
-    title: "Major Fleet Operation Success",
-    description: "Our coalition secured a decisive victory in the recent null-sec campaign, demonstrating exceptional coordination and strategic prowess.",
-    date: "2025-01-15",
-    category: "Operations",
-    image: fleetImage,
+    title: t.news.title1,
+    description: t.news.desc1,
+    date: "2024-01-15",
+    category: t.news.category1,
+    image: fleetShips,
   },
   {
     id: 2,
-    title: "New Citadel Deployed",
-    description: "Successfully anchored a Fortizar-class citadel in strategic territory, expanding our presence and providing new staging opportunities.",
-    date: "2025-01-10",
-    category: "Infrastructure",
-    image: stationImage,
+    title: t.news.title2,
+    description: t.news.desc2,
+    date: "2024-01-12",
+    category: t.news.category2,
+    image: heroFleet,
   },
   {
     id: 3,
-    title: "Recruitment Drive Opens",
-    description: "We're expanding our ranks! Experienced pilots and new capsuleers alike are welcome to apply and join our growing community.",
-    date: "2025-01-08",
-    category: "Recruitment",
-    image: fleetImage,
+    title: t.news.title3,
+    description: t.news.desc3,
+    date: "2024-01-10",
+    category: t.news.category3,
+    image: station,
   },
 ];
 
 export function NewsSection() {
+  const { language } = useLanguage();
+  const t = translations[language];
+  const newsItems = getNewsItems(t);
+  
   return (
     <section id="news" className="py-24 bg-background">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-16 animate-fade-in">
-          <h2 className="text-5xl font-bold mb-4 text-primary">Latest News</h2>
-          <p className="text-xl text-muted-foreground">
-            Stay updated with our latest operations and announcements
-          </p>
-        </div>
+        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-center text-primary">
+          {t.news.title}
+        </h2>
+        <p className="text-center text-muted-foreground mb-12 text-lg">
+          {t.news.subtitle}
+        </p>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {newsItems.map((item, index) => (
@@ -62,10 +68,7 @@ export function NewsSection() {
                   <Badge variant="outline" className="border-primary text-primary">
                     {item.category}
                   </Badge>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>{item.date}</span>
-                  </div>
+                  <span className="text-sm text-muted-foreground">{item.date}</span>
                 </div>
                 <CardTitle className="text-2xl">{item.title}</CardTitle>
               </CardHeader>

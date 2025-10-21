@@ -1,40 +1,46 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Shield, Target, Users, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Users, Shield, Zap, Trophy } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translations } from "@/translations";
 
-const benefits = [
-  {
-    icon: Users,
-    title: "Active Community",
-    description: "Join a thriving community of dedicated pilots across all time zones",
-  },
+const getBenefits = (t: any) => [
   {
     icon: Shield,
-    title: "Strategic Support",
-    description: "Access to alliance infrastructure, resources, and veteran leadership",
+    title: t.members.benefit1Title,
+    description: t.members.benefit1Desc,
   },
   {
-    icon: Zap,
-    title: "Regular Operations",
-    description: "Participate in coordinated fleet operations and special events",
+    icon: Target,
+    title: t.members.benefit2Title,
+    description: t.members.benefit2Desc,
   },
   {
-    icon: Trophy,
-    title: "Rewarding Content",
-    description: "Lucrative opportunities in null-sec space with strong ISK generation",
+    icon: Users,
+    title: t.members.benefit3Title,
+    description: t.members.benefit3Desc,
+  },
+  {
+    icon: GraduationCap,
+    title: t.members.benefit4Title,
+    description: t.members.benefit4Desc,
   },
 ];
 
 export function MembersSection() {
+  const { language } = useLanguage();
+  const t = translations[language];
+  const benefits = getBenefits(t);
+  
   return (
     <section id="members" className="py-24 bg-muted/30">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-16 animate-fade-in">
-          <h2 className="text-5xl font-bold mb-4 text-primary">Join Our Ranks</h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Whether you're a seasoned veteran or a new capsuleer, there's a place for you in Advent Coalition
-          </p>
-        </div>
+        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-center text-primary">
+          {t.members.title}
+        </h2>
+        <p className="text-center text-muted-foreground mb-12 text-lg">
+          {t.members.subtitle}
+        </p>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {benefits.map((benefit, index) => {
@@ -61,30 +67,22 @@ export function MembersSection() {
           })}
         </div>
 
-        <div className="text-center">
-          <Card className="bg-card border-primary max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle className="text-3xl">Ready to Join?</CardTitle>
-              <CardDescription className="text-lg">
-                Take the first step towards becoming part of something greater
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                Contact us in-game or join our Discord server to begin your application process.
-                Our recruitment team is ready to answer any questions you may have.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="bg-primary hover:bg-primary/90">
-                  Apply Now
-                </Button>
-                <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                  Join Discord
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="col-span-full bg-card/80 backdrop-blur border-primary/20 hover:border-primary/40 transition-all duration-300">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl text-primary">{t.members.ctaTitle}</CardTitle>
+            <CardDescription className="text-lg">
+              {t.members.ctaDesc}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex gap-4 justify-center">
+            <Button size="lg" className="text-lg">
+              {t.members.applyButton}
+            </Button>
+            <Button size="lg" variant="outline" className="text-lg">
+              {t.members.discordButton}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </section>
   );

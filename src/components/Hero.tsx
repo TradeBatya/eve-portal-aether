@@ -1,7 +1,12 @@
-import heroImage from "@/assets/hero-fleet.webp";
 import { Button } from "@/components/ui/button";
+import heroFleet from "@/assets/hero-fleet.webp";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translations } from "@/translations";
 
 export function Hero() {
+  const { language } = useLanguage();
+  const t = translations[language];
+  
   return (
     <section
       id="home"
@@ -10,34 +15,28 @@ export function Hero() {
       {/* Background Image with Animation */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat animate-slow-zoom"
-        style={{ backgroundImage: `url(${heroImage})` }}
+        style={{ backgroundImage: `url(${heroFleet})` }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/70 to-background" />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-6 text-center animate-fade-in">
-        <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-          Advent Coalition
+      <div className="relative z-10 container mx-auto px-6 text-center">
+        <h1 className="text-6xl md:text-8xl font-bold mb-6 animate-fade-in tracking-wider text-primary">
+          {t.hero.title}
         </h1>
-        <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          A premier alliance in New Eden, forging destiny among the stars
+        <p className="text-2xl md:text-3xl mb-4 animate-fade-in text-primary-foreground/90 font-light">
+          {t.hero.subtitle}
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button
-            size="lg"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
-            onClick={() => document.querySelector("#about")?.scrollIntoView({ behavior: "smooth" })}
-          >
-            Learn More
+        <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto animate-fade-in text-muted-foreground">
+          {t.hero.description}
+        </p>
+        <div className="flex gap-4 justify-center animate-fade-in">
+          <Button size="lg" className="text-lg px-8">
+            {t.hero.joinButton}
           </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-            onClick={() => document.querySelector("#members")?.scrollIntoView({ behavior: "smooth" })}
-          >
-            Join Us
+          <Button size="lg" variant="outline" className="text-lg px-8">
+            {t.hero.learnButton}
           </Button>
         </div>
       </div>

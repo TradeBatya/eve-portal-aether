@@ -5,9 +5,14 @@ import { NewsSection } from "@/components/NewsSection";
 import { MembersSection } from "@/components/MembersSection";
 import { AboutSection } from "@/components/AboutSection";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
+import { LanguageProvider } from "@/contexts/LanguageContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translations } from "@/translations";
 
-const Index = () => {
+function IndexContent() {
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const { language } = useLanguage();
+  const t = translations[language];
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -23,11 +28,19 @@ const Index = () => {
 
       <footer className="bg-card border-t border-border py-8">
         <div className="container mx-auto px-6 text-center text-muted-foreground">
-          <p>© 2025 Advent Coalition. All rights reserved.</p>
-          <p className="text-sm mt-2">New Eden awaits. Will you answer the call?</p>
+          <p>{t.footer.copyright}</p>
+          <p className="text-sm mt-2">{t.footer.tagline}</p>
         </div>
       </footer>
     </div>
+  );
+}
+
+const Index = () => {
+  return (
+    <LanguageProvider>
+      <IndexContent />
+    </LanguageProvider>
   );
 };
 

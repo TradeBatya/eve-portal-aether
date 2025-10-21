@@ -1,22 +1,26 @@
 import { useState } from "react";
-import { X, Home, Newspaper, Users, Info, Menu, LogIn } from "lucide-react";
+import { X, Home, Newspaper, Users, Info, Menu, LogIn, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translations } from "@/translations";
 
 interface SideNavProps {
   isOpen: boolean;
   onToggle: () => void;
 }
 
-const navItems = [
-  { title: "Home", icon: Home, href: "#home" },
-  { title: "News", icon: Newspaper, href: "#news" },
-  { title: "Members", icon: Users, href: "#members" },
-  { title: "About", icon: Info, href: "#about" },
+const navItems = (t: any) => [
+  { title: t.nav.home, icon: Home, href: "#home" },
+  { title: t.nav.news, icon: Newspaper, href: "#news" },
+  { title: t.nav.members, icon: Users, href: "#members" },
+  { title: t.nav.about, icon: Info, href: "#about" },
 ];
 
 export function SideNav({ isOpen, onToggle }: SideNavProps) {
   const [activeSection, setActiveSection] = useState("home");
+  const { language, toggleLanguage } = useLanguage();
+  const t = translations[language];
 
   const handleNavClick = (href: string) => {
     setActiveSection(href.replace("#", ""));
@@ -43,7 +47,7 @@ export function SideNav({ isOpen, onToggle }: SideNavProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-bold text-primary">Navigation</h2>
+          <h2 className="text-xl font-bold text-primary">{t.nav.title}</h2>
           <Button
             variant="ghost"
             size="icon"
@@ -56,7 +60,7 @@ export function SideNav({ isOpen, onToggle }: SideNavProps) {
 
         {/* Navigation Items */}
         <div className="flex-1 p-6 space-y-2">
-          {navItems.map((item) => {
+          {navItems(t).map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.href.replace("#", "");
             return (
@@ -80,15 +84,23 @@ export function SideNav({ isOpen, onToggle }: SideNavProps) {
         {/* Footer */}
         <div className="p-6 border-t border-border space-y-4">
           <Button 
+            onClick={toggleLanguage}
+            className="w-full flex items-center gap-2"
+            variant="outline"
+          >
+            <Languages className="h-5 w-5" />
+            <span>{language === "en" ? "Русский" : "English"}</span>
+          </Button>
+          <Button 
             disabled 
             className="w-full flex items-center gap-2 cursor-not-allowed"
             variant="default"
           >
             <LogIn className="h-5 w-5" />
-            <span>Authorize</span>
+            <span>{t.nav.authorize}</span>
           </Button>
           <p className="text-sm text-muted-foreground text-center">
-            Advent Coalition © 2025
+            {t.nav.copyright}
           </p>
         </div>
       </nav>
