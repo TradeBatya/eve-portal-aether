@@ -66,10 +66,10 @@ export const translations = {
       members: "Участники",
       about: "О нас",
       authorize: "Авторизация",
-      copyright: "Альянс Адвент © 2025",
+      copyright: "Advent Coalition © 2025",
     },
     hero: {
-      title: "АЛЬЯНС АДВЕНТ",
+      title: "ADVENT COALITION",
       subtitle: "Элитный Альянс в Новом Эдеме",
       description: "Присоединяйтесь к самому престижному альянсу в Eve Online. Мы - сообщество опытных пилотов, стремящихся доминировать в нулевом секторе.",
       joinButton: "Присоединиться",
