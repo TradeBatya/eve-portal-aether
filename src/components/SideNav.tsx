@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Home, Newspaper, Users, Info, Menu, LogIn, LogOut, Languages, Shield } from "lucide-react";
+import { X, Home, Newspaper, Users, Info, Menu, LogIn, LogOut, Languages, Shield, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -98,6 +98,14 @@ export function SideNav({ isOpen, onToggle }: SideNavProps) {
           
           {user ? (
             <>
+              <Button 
+                onClick={() => navigate('/profile')}
+                className="w-full flex items-center gap-2"
+                variant="outline"
+              >
+                <User className="h-5 w-5" />
+                <span>{language === "en" ? "Profile" : "Профиль"}</span>
+              </Button>
               {isAdmin && (
                 <Button 
                   onClick={() => navigate('/admin')}

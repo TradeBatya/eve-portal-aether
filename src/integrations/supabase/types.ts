@@ -56,6 +56,39 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          alliance_auth_id: string | null
+          alliance_auth_username: string | null
+          created_at: string
+          discord_id: string | null
+          discord_username: string | null
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          alliance_auth_id?: string | null
+          alliance_auth_username?: string | null
+          created_at?: string
+          discord_id?: string | null
+          discord_username?: string | null
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          alliance_auth_id?: string | null
+          alliance_auth_username?: string | null
+          created_at?: string
+          discord_id?: string | null
+          discord_username?: string | null
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
