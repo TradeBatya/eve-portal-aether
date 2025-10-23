@@ -5,11 +5,10 @@ import { NewsSection } from "@/components/NewsSection";
 import { MembersSection } from "@/components/MembersSection";
 import { AboutSection } from "@/components/AboutSection";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
-import { LanguageProvider } from "@/contexts/LanguageContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { translations } from "@/translations";
 
-function IndexContent() {
+const Index = () => {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const { language } = useLanguage();
   const t = translations[language];
@@ -33,14 +32,6 @@ function IndexContent() {
         </div>
       </footer>
     </div>
-  );
-}
-
-const Index = () => {
-  return (
-    <LanguageProvider>
-      <IndexContent />
-    </LanguageProvider>
   );
 };
 
