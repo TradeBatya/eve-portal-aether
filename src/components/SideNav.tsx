@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { X, Home, Newspaper, Users, Info, Menu, LogIn, Languages } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { X, Home, Newspaper, Users, Info, Menu, LogIn, LogOut, Languages, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { translations } from "@/translations";
 
 interface SideNavProps {
@@ -20,6 +22,8 @@ const navItems = (t: any) => [
 export function SideNav({ isOpen, onToggle }: SideNavProps) {
   const [activeSection, setActiveSection] = useState("home");
   const { language, toggleLanguage } = useLanguage();
+  const { user, isAdmin, signOut } = useAuth();
+  const navigate = useNavigate();
   const t = translations[language];
 
   const handleNavClick = (href: string) => {
@@ -91,14 +95,39 @@ export function SideNav({ isOpen, onToggle }: SideNavProps) {
             <Languages className="h-5 w-5" />
             <span>{language === "en" ? "Русский" : "English"}</span>
           </Button>
-          <Button 
-            disabled 
-            className="w-full flex items-center gap-2 cursor-not-allowed"
-            variant="default"
-          >
-            <LogIn className="h-5 w-5" />
-            <span>{t.nav.authorize}</span>
-          </Button>
+          
+          {user ? (
+            <>
+              {isAdmin && (
+                <Button 
+                  onClick={() => navigate('/admin')}
+                  className="w-full flex items-center gap-2"
+                  variant="secondary"
+                >
+                  <Shield className="h-5 w-5" />
+                  <span>{language === "en" ? "Admin Panel" : "Админ-панель"}</span>
+                </Button>
+              )}
+              <Button 
+                onClick={signOut}
+                className="w-full flex items-center gap-2"
+                variant="destructive"
+              >
+                <LogOut className="h-5 w-5" />
+                <span>{language === "en" ? "Sign Out" : "Выход"}</span>
+              </Button>
+            </>
+          ) : (
+            <Button 
+              onClick={() => navigate('/auth')}
+              className="w-full flex items-center gap-2"
+              variant="default"
+            >
+              <LogIn className="h-5 w-5" />
+              <span>{t.nav.authorize}</span>
+            </Button>
+          )}
+          
           <p className="text-sm text-muted-foreground text-center">
             {t.nav.copyright}
           </p>
