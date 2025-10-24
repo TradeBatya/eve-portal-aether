@@ -65,6 +65,7 @@ export type Database = {
           discord_username: string | null
           display_name: string | null
           id: string
+          timezone: string | null
           updated_at: string
         }
         Insert: {
@@ -75,6 +76,7 @@ export type Database = {
           discord_username?: string | null
           display_name?: string | null
           id: string
+          timezone?: string | null
           updated_at?: string
         }
         Update: {
@@ -85,6 +87,7 @@ export type Database = {
           discord_username?: string | null
           display_name?: string | null
           id?: string
+          timezone?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { SideNav } from "@/components/SideNav";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw, Trash2, User, Shield } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -18,6 +20,7 @@ interface Profile {
   discord_username: string | null;
   alliance_auth_id: string | null;
   alliance_auth_username: string | null;
+  timezone: string | null;
 }
 
 const Profile = () => {
@@ -35,7 +38,9 @@ const Profile = () => {
     discord_username: "",
     alliance_auth_id: "",
     alliance_auth_username: "",
+    timezone: "",
   });
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -92,6 +97,7 @@ const Profile = () => {
           discord_username: profile.discord_username,
           alliance_auth_id: profile.alliance_auth_id,
           alliance_auth_username: profile.alliance_auth_username,
+          timezone: profile.timezone,
         })
         .eq("id", user!.id);
 
@@ -112,6 +118,36 @@ const Profile = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      // First delete profile data
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", user!.id);
+      
+      if (profileError) throw profileError;
+
+      // Sign out - this will revoke the session
+      await supabase.auth.signOut();
+
+      toast({
+        title: language === "en" ? "Account Deleted" : "Аккаунт удалён",
+        description: language === "en" ? "Your account data has been deleted" : "Данные вашего аккаунта удалены",
+      });
+
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: language === "en" ? "Error" : "Ошибка",
+        description: error.message,
+        variant: "destructive",
+      });
+      setDeleting(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -124,132 +160,256 @@ const Profile = () => {
     <div className="min-h-screen bg-background">
       <SideNav isOpen={isNavOpen} onToggle={() => setIsNavOpen(!isNavOpen)} />
       
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/")}
-          className="mb-6"
-        >
-          ← {language === "en" ? "Back" : "Назад"}
-        </Button>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2 text-primary">
+            {language === "en" ? "Account Details" : "Детали аккаунта"}
+          </h1>
+          <p className="text-muted-foreground">
+            {language === "en" 
+              ? "Manage your account settings and integrations" 
+              : "Управляйте настройками аккаунта и интеграциями"}
+          </p>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {language === "en" ? "User Profile" : "Личный кабинет"}
-            </CardTitle>
-            <CardDescription>
-              {language === "en" 
-                ? "Manage your profile and service integrations" 
-                : "Управляйте профилем и интеграциями сервисов"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">
-                {language === "en" ? "Email" : "Электронная почта"}
-              </Label>
-              <Input id="email" value={user?.email || ""} disabled />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="displayName">
-                {language === "en" ? "Display Name" : "Отображаемое имя"}
-              </Label>
-              <Input
-                id="displayName"
-                value={profile.display_name || ""}
-                onChange={(e) =>
-                  setProfile({ ...profile, display_name: e.target.value })
-                }
-                placeholder={language === "en" ? "Enter your display name" : "Введите имя"}
-              />
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">
-                {language === "en" ? "Service Integrations" : "Интеграции сервисов"}
-              </h3>
-
-              <div className="space-y-4">
-                <Card className="bg-muted/50">
-                  <CardHeader>
-                    <CardTitle className="text-base">Discord</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="discordId">Discord ID</Label>
-                      <Input
-                        id="discordId"
-                        value={profile.discord_id || ""}
-                        onChange={(e) =>
-                          setProfile({ ...profile, discord_id: e.target.value })
-                        }
-                        placeholder={language === "en" ? "Enter Discord ID" : "Введите Discord ID"}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="discordUsername">
-                        {language === "en" ? "Discord Username" : "Discord имя пользователя"}
-                      </Label>
-                      <Input
-                        id="discordUsername"
-                        value={profile.discord_username || ""}
-                        onChange={(e) =>
-                          setProfile({ ...profile, discord_username: e.target.value })
-                        }
-                        placeholder={language === "en" ? "Enter Discord username" : "Введите Discord имя"}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-muted/50">
-                  <CardHeader>
-                    <CardTitle className="text-base">Alliance Auth</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="allianceAuthId">Alliance Auth ID</Label>
-                      <Input
-                        id="allianceAuthId"
-                        value={profile.alliance_auth_id || ""}
-                        onChange={(e) =>
-                          setProfile({ ...profile, alliance_auth_id: e.target.value })
-                        }
-                        placeholder={language === "en" ? "Enter Alliance Auth ID" : "Введите Alliance Auth ID"}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="allianceAuthUsername">
-                        {language === "en" ? "Alliance Auth Username" : "Alliance Auth имя пользователя"}
-                      </Label>
-                      <Input
-                        id="allianceAuthUsername"
-                        value={profile.alliance_auth_username || ""}
-                        onChange={(e) =>
-                          setProfile({ ...profile, alliance_auth_username: e.target.value })
-                        }
-                        placeholder={language === "en" ? "Enter Alliance Auth username" : "Введите Alliance Auth имя"}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+        <div className="space-y-6">
+          {/* Account Information */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  {language === "en" ? "Account Information" : "Информация об аккаунте"}
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    {language === "en" ? "Refresh" : "Обновить"}
+                  </Button>
+                </div>
               </div>
-            </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">
+                    {language === "en" ? "Account Email" : "Email аккаунта"}
+                  </Label>
+                  <p className="text-lg font-medium">{user?.email || "—"}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    {language === "en" ? "Status" : "Статус"}
+                  </Label>
+                  <p className="text-lg font-medium">
+                    {language === "en" ? "Member" : "Участник"}
+                  </p>
+                </div>
+              </div>
 
-            <Button onClick={handleSave} disabled={saving} className="w-full">
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {language === "en" ? "Saving..." : "Сохранение..."}
-                </>
-              ) : (
-                language === "en" ? "Save Changes" : "Сохранить изменения"
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+              <div className="space-y-2">
+                <Label htmlFor="displayName">
+                  {language === "en" ? "Display Name" : "Отображаемое имя"}
+                </Label>
+                <Input
+                  id="displayName"
+                  value={profile.display_name || ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, display_name: e.target.value })
+                  }
+                  placeholder={language === "en" ? "Enter your display name" : "Введите отображаемое имя"}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Prime Timezone */}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {language === "en" ? "Prime Timezone" : "Основной часовой пояс"}
+              </CardTitle>
+              <CardDescription>
+                {language === "en" 
+                  ? "Select the timezone you're most active in" 
+                  : "Выберите часовой пояс, в котором вы наиболее активны"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Select 
+                value={profile.timezone || ""} 
+                onValueChange={(value) => setProfile({ ...profile, timezone: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={language === "en" ? "Select your active timezone" : "Выберите ваш часовой пояс"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USTZ">USTZ (US Timezone)</SelectItem>
+                  <SelectItem value="EUTZ">EUTZ (EU Timezone)</SelectItem>
+                  <SelectItem value="AUTZ">AUTZ (AU Timezone)</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
+          {/* Service Integrations */}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {language === "en" ? "Service Integrations" : "Интеграции сервисов"}
+              </CardTitle>
+              <CardDescription>
+                {language === "en" 
+                  ? "Connect your Discord and Alliance Auth accounts" 
+                  : "Подключите ваши аккаунты Discord и Alliance Auth"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Card className="bg-muted/30 border-muted">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+                    </svg>
+                    Discord
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="discordId">Discord ID</Label>
+                    <Input
+                      id="discordId"
+                      value={profile.discord_id || ""}
+                      onChange={(e) =>
+                        setProfile({ ...profile, discord_id: e.target.value })
+                      }
+                      placeholder={language === "en" ? "Enter Discord ID" : "Введите Discord ID"}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="discordUsername">
+                      {language === "en" ? "Discord Username" : "Discord имя пользователя"}
+                    </Label>
+                    <Input
+                      id="discordUsername"
+                      value={profile.discord_username || ""}
+                      onChange={(e) =>
+                        setProfile({ ...profile, discord_username: e.target.value })
+                      }
+                      placeholder={language === "en" ? "Enter Discord username" : "Введите Discord имя"}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-muted/30 border-muted">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Alliance Auth
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="allianceAuthId">Alliance Auth ID</Label>
+                    <Input
+                      id="allianceAuthId"
+                      value={profile.alliance_auth_id || ""}
+                      onChange={(e) =>
+                        setProfile({ ...profile, alliance_auth_id: e.target.value })
+                      }
+                      placeholder={language === "en" ? "Enter Alliance Auth ID" : "Введите Alliance Auth ID"}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="allianceAuthUsername">
+                      {language === "en" ? "Alliance Auth Username" : "Alliance Auth имя пользователя"}
+                    </Label>
+                    <Input
+                      id="allianceAuthUsername"
+                      value={profile.alliance_auth_username || ""}
+                      onChange={(e) =>
+                        setProfile({ ...profile, alliance_auth_username: e.target.value })
+                      }
+                      placeholder={language === "en" ? "Enter Alliance Auth username" : "Введите Alliance Auth имя"}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
+
+          {/* Save Button */}
+          <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {language === "en" ? "Saving..." : "Сохранение..."}
+              </>
+            ) : (
+              language === "en" ? "Save Changes" : "Сохранить изменения"
+            )}
+          </Button>
+
+          {/* Danger Zone */}
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardHeader>
+              <CardTitle className="text-destructive flex items-center gap-2">
+                <Trash2 className="h-5 w-5" />
+                {language === "en" ? "Danger Zone" : "Опасная зона"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold mb-1">
+                    {language === "en" ? "Delete your account" : "Удалить ваш аккаунт"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {language === "en" 
+                      ? "Your profile and all data will be permanently removed" 
+                      : "Ваш профиль и все данные будут окончательно удалены"}
+                  </p>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={deleting}>
+                      {language === "en" ? "Delete Account" : "Удалить аккаунт"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        {language === "en" ? "Are you absolutely sure?" : "Вы абсолютно уверены?"}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {language === "en" 
+                          ? "This action cannot be undone. This will permanently delete your account and remove all your data from our servers." 
+                          : "Это действие нельзя отменить. Это навсегда удалит ваш аккаунт и все ваши данные с наших серверов."}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>
+                        {language === "en" ? "Cancel" : "Отмена"}
+                      </AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90">
+                        {deleting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {language === "en" ? "Deleting..." : "Удаление..."}
+                          </>
+                        ) : (
+                          language === "en" ? "Delete Account" : "Удалить аккаунт"
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
