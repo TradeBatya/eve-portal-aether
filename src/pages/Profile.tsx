@@ -253,90 +253,233 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* Service Integrations */}
-          <Card>
+          {/* Alliance Auth Integration */}
+          <Card className="border-primary/20">
             <CardHeader>
-              <CardTitle>
-                {language === "en" ? "Service Integrations" : "Интеграции сервисов"}
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  {language === "en" ? "Advent Coalition Alliance Auth" : "Alliance Auth Advent Coalition"}
+                </CardTitle>
+                <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  profile.alliance_auth_id 
+                    ? 'bg-success/20 text-success' 
+                    : 'bg-warning/20 text-warning'
+                }`}>
+                  {profile.alliance_auth_id 
+                    ? (language === "en" ? "Connected" : "Подключено")
+                    : (language === "en" ? "Not Connected" : "Не подключено")
+                  }
+                </div>
+              </div>
               <CardDescription>
                 {language === "en" 
-                  ? "Connect your Discord and Alliance Auth accounts" 
-                  : "Подключите ваши аккаунты Discord и Alliance Auth"}
+                  ? "Connect your Advent Coalition Alliance Auth account to access alliance services" 
+                  : "Подключите Alliance Auth аккаунт Advent Coalition для доступа к сервисам альянса"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Card className="bg-muted/30 border-muted">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
-                    </svg>
-                    Discord
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="discordId">Discord ID</Label>
-                    <Input
-                      id="discordId"
-                      value={profile.discord_id || ""}
-                      onChange={(e) =>
-                        setProfile({ ...profile, discord_id: e.target.value })
-                      }
-                      placeholder={language === "en" ? "Enter Discord ID" : "Введите Discord ID"}
-                    />
+              {!profile.alliance_auth_id ? (
+                <div className="p-4 border border-warning/50 bg-warning/10 rounded-lg">
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    {language === "en" ? "Connect Alliance Auth" : "Подключить Alliance Auth"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {language === "en" 
+                      ? "Connect your Alliance Auth account to sync your characters and access alliance services like Fleet Operations, SRP System, and Market Services." 
+                      : "Подключите свой Alliance Auth аккаунт для синхронизации персонажей и доступа к сервисам альянса: флотовым операциям, SRP системе и рыночным сервисам."}
+                  </p>
+                  <Button 
+                    className="w-full"
+                    onClick={() => {
+                      toast({
+                        title: language === "en" ? "Alliance Auth Connection" : "Подключение Alliance Auth",
+                        description: language === "en" 
+                          ? "Alliance Auth OAuth integration will be available soon. Please contact alliance leadership for manual setup." 
+                          : "OAuth интеграция Alliance Auth скоро будет доступна. Пожалуйста, свяжитесь с руководством альянса для ручной настройки.",
+                      });
+                    }}
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    {language === "en" ? "Connect to Alliance Auth" : "Подключить Alliance Auth"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 border border-success/50 bg-success/10 rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2">
+                        <h3 className="font-semibold flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-success" />
+                          {language === "en" ? "Alliance Information" : "Информация об альянсе"}
+                        </h3>
+                        <div className="text-sm space-y-1">
+                          <p><strong>{language === "en" ? "Alliance:" : "Альянс:"}</strong> Advent Coalition</p>
+                          <p><strong>{language === "en" ? "Username:" : "Имя пользователя:"}</strong> {profile.alliance_auth_username || "—"}</p>
+                          <p><strong>{language === "en" ? "Auth ID:" : "Auth ID:"}</strong> {profile.alliance_auth_id}</p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          toast({
+                            title: language === "en" ? "Refreshing..." : "Обновление...",
+                            description: language === "en" ? "Syncing data with Alliance Auth" : "Синхронизация данных с Alliance Auth",
+                          });
+                        }}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        {language === "en" ? "Refresh" : "Обновить"}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="discordUsername">
-                      {language === "en" ? "Discord Username" : "Discord имя пользователя"}
-                    </Label>
-                    <Input
-                      id="discordUsername"
-                      value={profile.discord_username || ""}
-                      onChange={(e) =>
-                        setProfile({ ...profile, discord_username: e.target.value })
-                      }
-                      placeholder={language === "en" ? "Enter Discord username" : "Введите Discord имя"}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
 
-              <Card className="bg-muted/30 border-muted">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    Alliance Auth
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="allianceAuthId">Alliance Auth ID</Label>
-                    <Input
-                      id="allianceAuthId"
-                      value={profile.alliance_auth_id || ""}
-                      onChange={(e) =>
-                        setProfile({ ...profile, alliance_auth_id: e.target.value })
-                      }
-                      placeholder={language === "en" ? "Enter Alliance Auth ID" : "Введите Alliance Auth ID"}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="bg-muted/30 border-muted">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">
+                          {language === "en" ? "Fleet Operations" : "Флотовые операции"}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          {language === "en" 
+                            ? "Join and manage fleet operations" 
+                            : "Присоединяйтесь к флотовым операциям"}
+                        </p>
+                        <Button variant="outline" size="sm" className="w-full">
+                          {language === "en" ? "Access" : "Открыть"}
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-muted/30 border-muted">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">
+                          {language === "en" ? "SRP System" : "SRP Система"}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          {language === "en" 
+                            ? "Ship Replacement Program" 
+                            : "Программа замены кораблей"}
+                        </p>
+                        <Button variant="outline" size="sm" className="w-full">
+                          {language === "en" ? "Submit Claim" : "Подать заявку"}
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-muted/30 border-muted">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">
+                          {language === "en" ? "Market Services" : "Рыночные сервисы"}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          {language === "en" 
+                            ? "Alliance market and contracts" 
+                            : "Рынок и контракты альянса"}
+                        </p>
+                        <Button variant="outline" size="sm" className="w-full">
+                          {language === "en" ? "Browse" : "Открыть"}
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-muted/30 border-muted">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">
+                          {language === "en" ? "Intel Channel" : "Intel канал"}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          {language === "en" 
+                            ? "Real-time intelligence" 
+                            : "Разведка в реальном времени"}
+                        </p>
+                        <Button variant="outline" size="sm" className="w-full">
+                          {language === "en" ? "View Intel" : "Смотреть"}
+                        </Button>
+                      </CardContent>
+                    </Card>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="allianceAuthUsername">
-                      {language === "en" ? "Alliance Auth Username" : "Alliance Auth имя пользователя"}
-                    </Label>
-                    <Input
-                      id="allianceAuthUsername"
-                      value={profile.alliance_auth_username || ""}
-                      onChange={(e) =>
-                        setProfile({ ...profile, alliance_auth_username: e.target.value })
-                      }
-                      placeholder={language === "en" ? "Enter Alliance Auth username" : "Введите Alliance Auth имя"}
-                    />
+
+                  <div className="pt-4 border-t">
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => {
+                        if (confirm(language === "en" 
+                          ? "Are you sure you want to disconnect Alliance Auth?" 
+                          : "Вы уверены, что хотите отключить Alliance Auth?")) {
+                          setProfile({ 
+                            ...profile, 
+                            alliance_auth_id: null, 
+                            alliance_auth_username: null 
+                          });
+                          toast({
+                            title: language === "en" ? "Disconnected" : "Отключено",
+                            description: language === "en" 
+                              ? "Alliance Auth has been disconnected" 
+                              : "Alliance Auth был отключен",
+                          });
+                        }
+                      }}
+                    >
+                      {language === "en" ? "Disconnect Alliance Auth" : "Отключить Alliance Auth"}
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Discord Integration */}
+          <Card className="bg-muted/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+                </svg>
+                Discord
+              </CardTitle>
+              <CardDescription>
+                {language === "en" 
+                  ? "Connect your Discord account for community access" 
+                  : "Подключите Discord для доступа к сообществу"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="discordId">Discord ID</Label>
+                <Input
+                  id="discordId"
+                  value={profile.discord_id || ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, discord_id: e.target.value })
+                  }
+                  placeholder={language === "en" ? "Enter Discord ID" : "Введите Discord ID"}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="discordUsername">
+                  {language === "en" ? "Discord Username" : "Discord имя пользователя"}
+                </Label>
+                <Input
+                  id="discordUsername"
+                  value={profile.discord_username || ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, discord_username: e.target.value })
+                  }
+                  placeholder={language === "en" ? "Enter Discord username" : "Введите Discord имя"}
+                />
+              </div>
             </CardContent>
           </Card>
 
