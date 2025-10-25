@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      fleet_operations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_participants: number | null
+          description: string | null
+          doctrine: string | null
+          duration_minutes: number | null
+          fc_name: string
+          id: string
+          image_url: string | null
+          location: string | null
+          max_participants: number | null
+          objectives: string | null
+          operation_type: Database["public"]["Enums"]["operation_type"]
+          start_time: string
+          status: Database["public"]["Enums"]["operation_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_participants?: number | null
+          description?: string | null
+          doctrine?: string | null
+          duration_minutes?: number | null
+          fc_name: string
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          max_participants?: number | null
+          objectives?: string | null
+          operation_type: Database["public"]["Enums"]["operation_type"]
+          start_time: string
+          status?: Database["public"]["Enums"]["operation_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_participants?: number | null
+          description?: string | null
+          doctrine?: string | null
+          duration_minutes?: number | null
+          fc_name?: string
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          max_participants?: number | null
+          objectives?: string | null
+          operation_type?: Database["public"]["Enums"]["operation_type"]
+          start_time?: string
+          status?: Database["public"]["Enums"]["operation_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       news: {
         Row: {
           category_en: string
@@ -53,6 +113,77 @@ export type Database = {
           title_en?: string
           title_ru?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      operation_signups: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          operation_id: string
+          role: string | null
+          ship_type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          operation_id: string
+          role?: string | null
+          ship_type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          operation_id?: string
+          role?: string | null
+          ship_type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operation_signups_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_operations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ping_notifications: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          message: string
+          priority: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          message: string
+          priority?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          message?: string
+          priority?: string
+          title?: string
         }
         Relationships: []
       }
@@ -128,6 +259,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      operation_status: "scheduled" | "ongoing" | "completed" | "cancelled"
+      operation_type:
+        | "pvp"
+        | "pve"
+        | "mining"
+        | "training"
+        | "logistics"
+        | "defense"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -256,6 +395,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      operation_status: ["scheduled", "ongoing", "completed", "cancelled"],
+      operation_type: [
+        "pvp",
+        "pve",
+        "mining",
+        "training",
+        "logistics",
+        "defense",
+      ],
     },
   },
 } as const
