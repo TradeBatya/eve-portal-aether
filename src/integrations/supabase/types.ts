@@ -74,6 +74,57 @@ export type Database = {
         }
         Relationships: []
       }
+      intel_reports: {
+        Row: {
+          activity_type: string
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          hostile_corps: string[] | null
+          hostiles_count: number | null
+          id: string
+          is_active: boolean
+          region_name: string | null
+          reported_by: string | null
+          ship_types: string[] | null
+          system_name: string
+          threat_level: string
+          updated_at: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          hostile_corps?: string[] | null
+          hostiles_count?: number | null
+          id?: string
+          is_active?: boolean
+          region_name?: string | null
+          reported_by?: string | null
+          ship_types?: string[] | null
+          system_name: string
+          threat_level?: string
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          hostile_corps?: string[] | null
+          hostiles_count?: number | null
+          id?: string
+          is_active?: boolean
+          region_name?: string | null
+          reported_by?: string | null
+          ship_types?: string[] | null
+          system_name?: string
+          threat_level?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       news: {
         Row: {
           category_en: string
