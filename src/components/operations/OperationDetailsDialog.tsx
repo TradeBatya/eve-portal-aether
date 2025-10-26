@@ -3,6 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const signupSchema = z.object({
+  role: z.string().trim().min(1, "Role is required").max(100, "Role must be less than 100 characters"),
+  ship_type: z.string().trim().min(1, "Ship type is required").max(100, "Ship type must be less than 100 characters"),
+  notes: z.string().trim().max(500, "Notes must be less than 500 characters").optional().or(z.literal("")),
+});
 import {
   Dialog,
   DialogContent,
@@ -105,29 +112,54 @@ export function OperationDetailsDialog({ open, onOpenChange, operation, onUpdate
 
     setLoading(true);
 
-    const { error } = await supabase.from('operation_signups').insert({
-      operation_id: operation.id,
-      user_id: user.id,
-      role: signupData.role,
-      ship_type: signupData.ship_type,
-      notes: signupData.notes
-    });
+    try {
+      // Validate input
+      const validationResult = signupSchema.safeParse(signupData);
+      
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors.map(e => e.message).join(", ");
+        toast({
+          title: language === 'en' ? 'Validation Error' : 'Ошибка валидации',
+          description: errors,
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
 
-    setLoading(false);
+      const { error } = await supabase.from('operation_signups').insert({
+        operation_id: operation.id,
+        user_id: user.id,
+        role: validationResult.data.role,
+        ship_type: validationResult.data.ship_type,
+        notes: validationResult.data.notes || null
+      });
 
-    if (error) {
+      setLoading(false);
+
+      if (error) {
+        toast({
+          title: language === 'en' ? 'Error' : 'Ошибка',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: language === 'en' ? 'Signed up!' : 'Записаны!',
+          description: language === 'en' ? 'You are now registered for this operation' : 'Вы зарегистрированы на операцию'
+        });
+        setIsSignedUp(true);
+        setSignupData({ role: '', ship_type: '', notes: '' });
+        fetchSignups();
+        onUpdate();
+      }
+    } catch (error) {
+      setLoading(false);
       toast({
         title: language === 'en' ? 'Error' : 'Ошибка',
-        description: error.message,
-        variant: 'destructive'
+        description: "Unexpected error occurred",
+        variant: 'destructive',
       });
-    } else {
-      toast({
-        title: language === 'en' ? 'Signed up!' : 'Записаны!',
-        description: language === 'en' ? 'You are now registered for this operation' : 'Вы зарегистрированы на операцию'
-      });
-      fetchSignups();
-      onUpdate();
     }
   };
 

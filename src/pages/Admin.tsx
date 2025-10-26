@@ -11,6 +11,17 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Trash2, Plus, ArrowLeft } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { z } from 'zod';
+
+const newsSchema = z.object({
+  title_en: z.string().trim().min(1, "English title is required").max(200, "Title must be less than 200 characters"),
+  title_ru: z.string().trim().min(1, "Russian title is required").max(200, "Title must be less than 200 characters"),
+  description_en: z.string().trim().min(1, "English description is required").max(2000, "Description must be less than 2000 characters"),
+  description_ru: z.string().trim().min(1, "Russian description is required").max(2000, "Description must be less than 2000 characters"),
+  category_en: z.string().trim().min(1, "English category is required").max(100, "Category must be less than 100 characters"),
+  category_ru: z.string().trim().min(1, "Russian category is required").max(100, "Category must be less than 100 characters"),
+  image_url: z.string().trim().url("Must be a valid URL").max(500, "URL must be less than 500 characters"),
+});
 
 interface News {
   id: string;
@@ -110,41 +121,70 @@ export default function Admin() {
     e.preventDefault();
     if (!editingNews) return;
 
-    const { id, ...newsData } = editingNews;
-    
-    if (id) {
-      const { error } = await supabase
-        .from('news')
-        .update(newsData)
-        .eq('id', id);
+    const { id, date, ...newsData } = editingNews;
 
-      if (error) {
+    try {
+      // Validate input
+      const validationResult = newsSchema.safeParse(newsData);
+      
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors.map(e => e.message).join(", ");
         toast({
-          title: 'Error',
-          description: error.message,
+          title: 'Validation Error',
+          description: errors,
           variant: 'destructive',
         });
-      } else {
-        toast({ title: 'Success', description: 'News updated' });
-        loadNews();
-        setIsDialogOpen(false);
+        return;
       }
-    } else {
-      const { error } = await supabase
-        .from('news')
-        .insert([newsData]);
+      
+      if (id) {
+        const { error } = await supabase
+          .from('news')
+          .update(validationResult.data)
+          .eq('id', id);
 
-      if (error) {
-        toast({
-          title: 'Error',
-          description: error.message,
-          variant: 'destructive',
-        });
+        if (error) {
+          toast({
+            title: 'Error',
+            description: error.message,
+            variant: 'destructive',
+          });
+        } else {
+          toast({ title: 'Success', description: 'News updated' });
+          loadNews();
+          setIsDialogOpen(false);
+        }
       } else {
-        toast({ title: 'Success', description: 'News created' });
-        loadNews();
-        setIsDialogOpen(false);
+        const { error } = await supabase
+          .from('news')
+          .insert([{
+            title_en: validationResult.data.title_en,
+            title_ru: validationResult.data.title_ru,
+            description_en: validationResult.data.description_en,
+            description_ru: validationResult.data.description_ru,
+            category_en: validationResult.data.category_en,
+            category_ru: validationResult.data.category_ru,
+            image_url: validationResult.data.image_url,
+          }]);
+
+        if (error) {
+          toast({
+            title: 'Error',
+            description: error.message,
+            variant: 'destructive',
+          });
+        } else {
+          toast({ title: 'Success', description: 'News created' });
+          loadNews();
+          setIsDialogOpen(false);
+        }
       }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Unexpected error occurred',
+        variant: 'destructive',
+      });
     }
   };
 

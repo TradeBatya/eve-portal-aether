@@ -3,6 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const operationSchema = z.object({
+  title: z.string().trim().min(1, "Title is required").max(200, "Title must be less than 200 characters"),
+  description: z.string().trim().max(2000, "Description must be less than 2000 characters").optional().or(z.literal("")),
+  fc_name: z.string().trim().min(1, "Fleet Commander is required").max(100, "Name must be less than 100 characters"),
+  location: z.string().trim().max(200, "Location must be less than 200 characters").optional().or(z.literal("")),
+  doctrine: z.string().trim().max(200, "Doctrine must be less than 200 characters").optional().or(z.literal("")),
+  objectives: z.string().trim().max(1000, "Objectives must be less than 1000 characters").optional().or(z.literal("")),
+  max_participants: z.string().refine((val) => !val || (Number(val) > 0 && Number(val) <= 1000), "Max 1000 participants").optional(),
+  duration_minutes: z.number().int().positive().max(1440, "Max 24 hours"),
+});
 import {
   Dialog,
   DialogContent,
@@ -53,46 +65,69 @@ export function CreateOperationDialog({ open, onOpenChange, onSuccess }: CreateO
 
     setLoading(true);
 
-    const { error } = await supabase.from('fleet_operations').insert([{
-      title: formData.title,
-      description: formData.description,
-      operation_type: formData.operation_type as any,
-      fc_name: formData.fc_name,
-      start_time: formData.start_time,
-      duration_minutes: formData.duration_minutes,
-      location: formData.location,
-      doctrine: formData.doctrine,
-      max_participants: formData.max_participants ? parseInt(formData.max_participants) : null,
-      objectives: formData.objectives,
-      created_by: user.id
-    }]);
+    try {
+      // Validate input
+      const validationResult = operationSchema.safeParse(formData);
+      
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors.map(e => e.message).join(", ");
+        toast({
+          title: language === 'en' ? 'Validation Error' : 'Ошибка валидации',
+          description: errors,
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
 
-    setLoading(false);
+      const { error } = await supabase.from('fleet_operations').insert([{
+        title: validationResult.data.title,
+        description: validationResult.data.description || null,
+        operation_type: formData.operation_type as any,
+        fc_name: validationResult.data.fc_name,
+        start_time: formData.start_time,
+        duration_minutes: validationResult.data.duration_minutes,
+        location: validationResult.data.location || null,
+        doctrine: validationResult.data.doctrine || null,
+        max_participants: formData.max_participants ? parseInt(formData.max_participants) : null,
+        objectives: validationResult.data.objectives || null,
+        created_by: user.id
+      }]);
 
-    if (error) {
+      setLoading(false);
+
+      if (error) {
+        toast({
+          title: language === 'en' ? 'Error' : 'Ошибка',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: language === 'en' ? 'Success' : 'Успешно',
+          description: language === 'en' ? 'Operation created successfully' : 'Операция создана'
+        });
+        onSuccess();
+        onOpenChange(false);
+        setFormData({
+          title: "",
+          description: "",
+          operation_type: "pvp",
+          fc_name: "",
+          start_time: "",
+          duration_minutes: 120,
+          location: "",
+          doctrine: "",
+          max_participants: "",
+          objectives: ""
+        });
+      }
+    } catch (error) {
+      setLoading(false);
       toast({
         title: language === 'en' ? 'Error' : 'Ошибка',
-        description: error.message,
-        variant: 'destructive'
-      });
-    } else {
-      toast({
-        title: language === 'en' ? 'Success' : 'Успешно',
-        description: language === 'en' ? 'Operation created successfully' : 'Операция создана'
-      });
-      onSuccess();
-      onOpenChange(false);
-      setFormData({
-        title: "",
-        description: "",
-        operation_type: "pvp",
-        fc_name: "",
-        start_time: "",
-        duration_minutes: 120,
-        location: "",
-        doctrine: "",
-        max_participants: "",
-        objectives: ""
+        description: "Unexpected error occurred",
+        variant: 'destructive',
       });
     }
   };
