@@ -23,33 +23,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await checkAdminRole(session.user.id);
-        } else {
-          setIsAdmin(false);
-        }
-      }
-    );
-
-    // Check for existing session
     const initializeAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         await checkAdminRole(session.user.id);
       }
       setLoading(false);
     };
-    
+
     initializeAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        (async () => {
+          setSession(session);
+          setUser(session?.user ?? null);
+
+          if (session?.user) {
+            await checkAdminRole(session.user.id);
+          } else {
+            setIsAdmin(false);
+          }
+        })();
+      }
+    );
 
     return () => subscription.unsubscribe();
   }, []);

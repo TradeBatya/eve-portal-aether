@@ -7,13 +7,176 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
+      doctrine_categories: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          icon: string | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          icon?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          icon?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ship_doctrines: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          category_id: string | null
+          primary_ship: string
+          fleet_type: string | null
+          difficulty: string
+          estimated_cost: number
+          image_url: string | null
+          is_active: boolean
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          category_id?: string | null
+          primary_ship: string
+          fleet_type?: string | null
+          difficulty?: string
+          estimated_cost?: number
+          image_url?: string | null
+          is_active?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          category_id?: string | null
+          primary_ship?: string
+          fleet_type?: string | null
+          difficulty?: string
+          estimated_cost?: number
+          image_url?: string | null
+          is_active?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ship_doctrines_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "doctrine_categories"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      ship_fittings: {
+        Row: {
+          id: string
+          doctrine_id: string | null
+          ship_type: string
+          role: string
+          eft_fitting: string
+          description: string | null
+          required_skills: Json
+          estimated_cost: number
+          priority: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          doctrine_id?: string | null
+          ship_type: string
+          role?: string
+          eft_fitting: string
+          description?: string | null
+          required_skills?: Json
+          estimated_cost?: number
+          priority?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          doctrine_id?: string | null
+          ship_type?: string
+          role?: string
+          eft_fitting?: string
+          description?: string | null
+          required_skills?: Json
+          estimated_cost?: number
+          priority?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ship_fittings_doctrine_id_fkey"
+            columns: ["doctrine_id"]
+            isOneToOne: false
+            referencedRelation: "ship_doctrines"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      doctrine_tags: {
+        Row: {
+          id: string
+          doctrine_id: string | null
+          tag: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          doctrine_id?: string | null
+          tag: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          doctrine_id?: string | null
+          tag?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctrine_tags_doctrine_id_fkey"
+            columns: ["doctrine_id"]
+            isOneToOne: false
+            referencedRelation: "ship_doctrines"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       fleet_operations: {
         Row: {
           created_at: string
