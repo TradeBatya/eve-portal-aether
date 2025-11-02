@@ -23,11 +23,30 @@ const EveCallback = () => {
         setStatus('Получение токена...');
 
         // Вызов edge function для обмена кода на токен
+        // Check if this is adding to existing account
+        const isAddingCharacter = state && state.startsWith('add_character_');
+        const userId = isAddingCharacter ? state.replace('add_character_', '') : null;
+
         const { data, error } = await supabase.functions.invoke('eve-auth', {
-          body: { code, state }
+          body: { code, state, userId }
         });
 
         if (error) throw error;
+
+        // If adding character to existing account
+        if (isAddingCharacter && data.success) {
+          setStatus('Персонаж добавлен! Перенаправление...');
+          
+          toast({
+            title: "Персонаж добавлен",
+            description: `${data.character_name} успешно привязан к аккаунту!`,
+          });
+
+          setTimeout(() => {
+            navigate('/profile');
+          }, 1000);
+          return;
+        }
 
         setStatus('Создание сессии...');
 

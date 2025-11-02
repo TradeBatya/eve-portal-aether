@@ -6,19 +6,42 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const MAX_CHARACTERS_PER_USER = 3;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { code } = await req.json();
+    const { code, userId } = await req.json();
 
     const clientId = Deno.env.get('EVE_CLIENT_ID');
     const clientSecret = Deno.env.get('EVE_CLIENT_SECRET');
     
     if (!clientId || !clientSecret) {
       throw new Error('EVE credentials not configured');
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // If userId is provided, check if user already has 3 characters
+    if (userId) {
+      const { data: existingCharacters, error: countError } = await supabase
+        .from('eve_characters')
+        .select('id')
+        .eq('user_id', userId);
+
+      if (countError) {
+        console.error('Error checking character count:', countError);
+        throw new Error('Failed to check character count');
+      }
+
+      if (existingCharacters && existingCharacters.length >= MAX_CHARACTERS_PER_USER) {
+        throw new Error(`Maximum ${MAX_CHARACTERS_PER_USER} characters per account`);
+      }
     }
 
     console.log('Exchanging code for token...');
@@ -59,59 +82,127 @@ serve(async (req) => {
     const characterData = await verifyResponse.json();
     console.log('Character verified:', characterData.CharacterName);
 
-    // Create or update user in Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Calculate token expiration
+    const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
+    const scopes = characterData.Scopes ? characterData.Scopes.split(' ') : [];
 
-    // Create auth user with EVE character ID as identifier
-    const email = `${characterData.CharacterID}@eve.local`;
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: email,
-      email_confirm: true,
-      user_metadata: {
-        character_id: characterData.CharacterID,
-        character_name: characterData.CharacterName,
-        character_owner_hash: characterData.CharacterOwnerHash,
-      },
-    });
+    // If userId is provided, add character to existing user
+    if (userId) {
+      // Check if character already exists
+      const { data: existingChar } = await supabase
+        .from('eve_characters')
+        .select('*')
+        .eq('character_id', characterData.CharacterID)
+        .single();
 
-    if (authError) {
-      // User might already exist, try to get it
-      const { data: existingUser } = await supabase.auth.admin.listUsers();
-      const user = existingUser?.users.find(u => u.email === email);
-      
-      if (user) {
-        // Update user metadata
-        await supabase.auth.admin.updateUserById(user.id, {
-          user_metadata: {
+      if (existingChar) {
+        // Update existing character
+        const { error: updateError } = await supabase
+          .from('eve_characters')
+          .update({
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            expires_at: expiresAt.toISOString(),
+            scopes: scopes,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('character_id', characterData.CharacterID);
+
+        if (updateError) throw updateError;
+      } else {
+        // Insert new character
+        const { error: insertError } = await supabase
+          .from('eve_characters')
+          .insert({
+            user_id: userId,
             character_id: characterData.CharacterID,
             character_name: characterData.CharacterName,
             character_owner_hash: characterData.CharacterOwnerHash,
-          },
-        });
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            expires_at: expiresAt.toISOString(),
+            scopes: scopes,
+          });
 
-        // Generate session
-        const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
-          type: 'magiclink',
-          email: email,
-        });
-
-        if (sessionError) throw sessionError;
-
-        return new Response(JSON.stringify({
-          character_name: characterData.CharacterName,
-          character_id: characterData.CharacterID,
-          session_url: sessionData.properties.action_link,
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        if (insertError) throw insertError;
       }
-      
-      throw authError;
+
+      return new Response(JSON.stringify({
+        success: true,
+        character_name: characterData.CharacterName,
+        character_id: characterData.CharacterID,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Generate session for new user
+    // If no userId, create new auth user
+    const email = `${characterData.CharacterID}@eve.local`;
+    let authUserId: string;
+
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const existingUser = existingUsers?.users.find(u => u.email === email);
+
+    if (existingUser) {
+      authUserId = existingUser.id;
+      
+      // Update user metadata
+      await supabase.auth.admin.updateUserById(authUserId, {
+        user_metadata: {
+          character_id: characterData.CharacterID,
+          character_name: characterData.CharacterName,
+          character_owner_hash: characterData.CharacterOwnerHash,
+        },
+      });
+    } else {
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email: email,
+        email_confirm: true,
+        user_metadata: {
+          character_id: characterData.CharacterID,
+          character_name: characterData.CharacterName,
+          character_owner_hash: characterData.CharacterOwnerHash,
+        },
+      });
+
+      if (createError) throw createError;
+      authUserId = newUser.user.id;
+    }
+
+    // Save character data
+    const { data: existingChar } = await supabase
+      .from('eve_characters')
+      .select('*')
+      .eq('character_id', characterData.CharacterID)
+      .single();
+
+    if (existingChar) {
+      await supabase
+        .from('eve_characters')
+        .update({
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          expires_at: expiresAt.toISOString(),
+          scopes: scopes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('character_id', characterData.CharacterID);
+    } else {
+      await supabase
+        .from('eve_characters')
+        .insert({
+          user_id: authUserId,
+          character_id: characterData.CharacterID,
+          character_name: characterData.CharacterName,
+          character_owner_hash: characterData.CharacterOwnerHash,
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          expires_at: expiresAt.toISOString(),
+          scopes: scopes,
+        });
+    }
+
+    // Generate session
     const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
       email: email,

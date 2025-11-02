@@ -23,6 +23,13 @@ interface Profile {
   timezone: string | null;
 }
 
+interface EveCharacter {
+  id: string;
+  character_id: number;
+  character_name: string;
+  created_at: string;
+}
+
 const Profile = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -41,6 +48,8 @@ const Profile = () => {
     timezone: "",
   });
   const [deleting, setDeleting] = useState(false);
+  const [eveCharacters, setEveCharacters] = useState<EveCharacter[]>([]);
+  const [loadingCharacters, setLoadingCharacters] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -51,6 +60,7 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       loadProfile();
+      loadEveCharacters();
     }
   }, [user]);
 
@@ -83,6 +93,146 @@ const Profile = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEveCharacters = async () => {
+    setLoadingCharacters(true);
+    try {
+      const { data, error } = await supabase
+        .from('eve_characters')
+        .select('id, character_id, character_name, created_at')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setEveCharacters(data || []);
+    } catch (error: any) {
+      toast({
+        title: language === "en" ? "Error" : "Ошибка",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingCharacters(false);
+    }
+  };
+
+  const handleAddEveCharacter = () => {
+    if (eveCharacters.length >= 3) {
+      toast({
+        title: language === "en" ? "Limit Reached" : "Достигнут лимит",
+        description: language === "en" ? "Maximum 3 characters per account" : "Максимум 3 персонажа на аккаунт",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const clientId = '9b9086e27f4940d8a8c64c2881944375';
+    const redirectUri = `${window.location.origin}/auth/eve/callback`;
+    const state = `add_character_${user!.id}`;
+    
+    const scopes = [
+      'publicData',
+      'esi-calendar.respond_calendar_events.v1',
+      'esi-calendar.read_calendar_events.v1',
+      'esi-location.read_location.v1',
+      'esi-location.read_ship_type.v1',
+      'esi-mail.organize_mail.v1',
+      'esi-mail.read_mail.v1',
+      'esi-mail.send_mail.v1',
+      'esi-skills.read_skills.v1',
+      'esi-skills.read_skillqueue.v1',
+      'esi-wallet.read_character_wallet.v1',
+      'esi-wallet.read_corporation_wallet.v1',
+      'esi-search.search_structures.v1',
+      'esi-clones.read_clones.v1',
+      'esi-characters.read_contacts.v1',
+      'esi-universe.read_structures.v1',
+      'esi-killmails.read_killmails.v1',
+      'esi-corporations.read_corporation_membership.v1',
+      'esi-assets.read_assets.v1',
+      'esi-planets.manage_planets.v1',
+      'esi-fleets.read_fleet.v1',
+      'esi-fleets.write_fleet.v1',
+      'esi-ui.open_window.v1',
+      'esi-ui.write_waypoint.v1',
+      'esi-characters.write_contacts.v1',
+      'esi-fittings.read_fittings.v1',
+      'esi-fittings.write_fittings.v1',
+      'esi-markets.structure_markets.v1',
+      'esi-corporations.read_structures.v1',
+      'esi-characters.read_loyalty.v1',
+      'esi-characters.read_chat_channels.v1',
+      'esi-characters.read_medals.v1',
+      'esi-characters.read_standings.v1',
+      'esi-characters.read_agents_research.v1',
+      'esi-industry.read_character_jobs.v1',
+      'esi-markets.read_character_orders.v1',
+      'esi-characters.read_blueprints.v1',
+      'esi-characters.read_corporation_roles.v1',
+      'esi-location.read_online.v1',
+      'esi-contracts.read_character_contracts.v1',
+      'esi-clones.read_implants.v1',
+      'esi-characters.read_fatigue.v1',
+      'esi-killmails.read_corporation_killmails.v1',
+      'esi-corporations.track_members.v1',
+      'esi-wallet.read_corporation_wallets.v1',
+      'esi-characters.read_notifications.v1',
+      'esi-corporations.read_divisions.v1',
+      'esi-corporations.read_contacts.v1',
+      'esi-assets.read_corporation_assets.v1',
+      'esi-corporations.read_titles.v1',
+      'esi-corporations.read_blueprints.v1',
+      'esi-contracts.read_corporation_contracts.v1',
+      'esi-corporations.read_standings.v1',
+      'esi-corporations.read_starbases.v1',
+      'esi-industry.read_corporation_jobs.v1',
+      'esi-markets.read_corporation_orders.v1',
+      'esi-corporations.read_container_logs.v1',
+      'esi-industry.read_character_mining.v1',
+      'esi-industry.read_corporation_mining.v1',
+      'esi-planets.read_customs_offices.v1',
+      'esi-corporations.read_facilities.v1',
+      'esi-corporations.read_medals.v1',
+      'esi-characters.read_titles.v1',
+      'esi-alliances.read_contacts.v1',
+      'esi-characters.read_fw_stats.v1',
+      'esi-corporations.read_fw_stats.v1',
+      'esi-corporations.read_projects.v1'
+    ].join(' ');
+    
+    const authUrl = `https://login.eveonline.com/v2/oauth/authorize/?` +
+      `response_type=code&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `client_id=${clientId}&` +
+      `scope=${encodeURIComponent(scopes)}&` +
+      `state=${state}`;
+    
+    window.location.href = authUrl;
+  };
+
+  const handleDeleteCharacter = async (characterId: string) => {
+    try {
+      const { error } = await supabase
+        .from('eve_characters')
+        .delete()
+        .eq('id', characterId);
+
+      if (error) throw error;
+
+      toast({
+        title: language === "en" ? "Success" : "Успешно",
+        description: language === "en" ? "Character removed" : "Персонаж удалён",
+      });
+
+      loadEveCharacters();
+    } catch (error: any) {
+      toast({
+        title: language === "en" ? "Error" : "Ошибка",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -221,6 +371,111 @@ const Profile = () => {
                   placeholder={language === "en" ? "Enter your display name" : "Введите отображаемое имя"}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* EVE Online Characters */}
+          <Card className="border-primary/20">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  {language === "en" ? "EVE Online Characters" : "Персонажи EVE Online"}
+                </CardTitle>
+                <div className="text-sm text-muted-foreground">
+                  {eveCharacters.length}/3
+                </div>
+              </div>
+              <CardDescription>
+                {language === "en" 
+                  ? "Manage your EVE Online characters (maximum 3)" 
+                  : "Управление вашими персонажами EVE Online (максимум 3)"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {loadingCharacters ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : (
+                <>
+                  {eveCharacters.length === 0 ? (
+                    <div className="p-4 border border-dashed border-muted-foreground/30 rounded-lg text-center">
+                      <p className="text-muted-foreground mb-4">
+                        {language === "en" 
+                          ? "No characters added yet" 
+                          : "Персонажи еще не добавлены"}
+                      </p>
+                      <Button onClick={handleAddEveCharacter}>
+                        <Shield className="h-4 w-4 mr-2" />
+                        {language === "en" ? "Add First Character" : "Добавить первого персонажа"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-3">
+                        {eveCharacters.map((char) => (
+                          <div
+                            key={char.id}
+                            className="flex items-center justify-between p-4 border border-primary/20 bg-primary/5 rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={`https://images.evetech.net/characters/${char.character_id}/portrait?size=64`}
+                                alt={char.character_name}
+                                className="w-12 h-12 rounded-full border-2 border-primary"
+                              />
+                              <div>
+                                <p className="font-semibold">{char.character_name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {language === "en" ? "ID:" : "ID:"} {char.character_id}
+                                </p>
+                              </div>
+                            </div>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {language === "en" ? "Remove Character?" : "Удалить персонажа?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {language === "en" 
+                                      ? `Are you sure you want to remove ${char.character_name}?` 
+                                      : `Вы уверены, что хотите удалить ${char.character_name}?`}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "en" ? "Cancel" : "Отмена"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteCharacter(char.id)}>
+                                    {language === "en" ? "Remove" : "Удалить"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        ))}
+                      </div>
+                      {eveCharacters.length < 3 && (
+                        <Button 
+                          onClick={handleAddEveCharacter} 
+                          className="w-full"
+                          variant="outline"
+                        >
+                          <Shield className="h-4 w-4 mr-2" />
+                          {language === "en" ? "Add Another Character" : "Добавить ещё персонажа"}
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
 
