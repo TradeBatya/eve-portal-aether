@@ -28,6 +28,8 @@ export default function Auth() {
       signUpButton: 'Create Account',
       signInDesc: 'Enter your credentials to access your account',
       signUpDesc: 'Create a new account to join Advent Coalition',
+      eveLogin: 'Login with EVE Online',
+      orDivider: 'OR',
     },
     ru: {
       title: 'Авторизация',
@@ -39,6 +41,8 @@ export default function Auth() {
       signUpButton: 'Создать аккаунт',
       signInDesc: 'Введите свои данные для входа',
       signUpDesc: 'Создайте новый аккаунт для вступления в Advent Coalition',
+      eveLogin: 'Войти через EVE Online',
+      orDivider: 'ИЛИ',
     },
   }[language];
 
@@ -62,6 +66,21 @@ export default function Auth() {
     setLoading(false);
   };
 
+  const handleEveLogin = () => {
+    const clientId = '9b9086e27f4940d8a8c64c2881944375';
+    const redirectUri = `${window.location.origin}/auth/eve/callback`;
+    const state = Math.random().toString(36).substring(7);
+    
+    const authUrl = `https://login.eveonline.com/v2/oauth/authorize/?` +
+      `response_type=code&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `client_id=${clientId}&` +
+      `scope=&` +
+      `state=${state}`;
+    
+    window.location.href = authUrl;
+  };
+
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
       <AnimatedBackground />
@@ -71,6 +90,24 @@ export default function Auth() {
           <CardTitle className="text-3xl font-orbitron">{t.title}</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-6">
+            <Button 
+              onClick={handleEveLogin}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900"
+              size="lg"
+            >
+              {t.eveLogin}
+            </Button>
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">{t.orDivider}</span>
+              </div>
+            </div>
+          </div>
+          
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">{t.signIn}</TabsTrigger>

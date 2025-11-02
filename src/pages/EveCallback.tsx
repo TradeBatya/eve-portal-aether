@@ -22,12 +22,31 @@ const EveCallback = () => {
 
         setStatus('Получение токена...');
 
-        // Здесь будет вызов edge function для обмена кода на токен
+        // Вызов edge function для обмена кода на токен
         const { data, error } = await supabase.functions.invoke('eve-auth', {
           body: { code, state }
         });
 
         if (error) throw error;
+
+        setStatus('Создание сессии...');
+
+        // Используем сгенерированную ссылку для авторизации
+        if (data.session_url) {
+          // Извлекаем токены из URL
+          const url = new URL(data.session_url);
+          const accessToken = url.searchParams.get('access_token');
+          const refreshToken = url.searchParams.get('refresh_token');
+          
+          if (accessToken && refreshToken) {
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+
+            if (sessionError) throw sessionError;
+          }
+        }
 
         setStatus('Авторизация успешна! Перенаправление...');
         
@@ -36,7 +55,6 @@ const EveCallback = () => {
           description: `Добро пожаловать, ${data.character_name}!`,
         });
 
-        // Сохраняем данные пользователя и перенаправляем
         setTimeout(() => {
           navigate('/');
         }, 1000);

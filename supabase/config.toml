@@ -1,1 +1,4 @@
 project_id = "wncskhubrkivfcgigemz"
+
+[functions.eve-auth]
+verify_jwt = false
