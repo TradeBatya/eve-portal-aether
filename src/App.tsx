@@ -12,6 +12,7 @@ import Profile from "./pages/Profile";
 import Operations from "./pages/Operations";
 import Intel from "./pages/Intel";
 import Doctrines from "./pages/Doctrines";
+import EveCallback from "./pages/EveCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/eve/callback" element={<EveCallback />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/operations" element={<Operations />} />
