@@ -82,6 +82,34 @@ serve(async (req) => {
     const characterData = await verifyResponse.json();
     console.log('Character verified:', characterData.CharacterName);
 
+    // Get character corporation info
+    const characterInfoResponse = await fetch(
+      `https://esi.evetech.net/latest/characters/${characterData.CharacterID}/?datasource=tranquility`,
+      {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+        },
+      }
+    );
+
+    let corporationId = null;
+    let corporationName = null;
+    
+    if (characterInfoResponse.ok) {
+      const charInfo = await characterInfoResponse.json();
+      corporationId = charInfo.corporation_id;
+      
+      // Get corporation name
+      const corpResponse = await fetch(
+        `https://esi.evetech.net/latest/corporations/${corporationId}/?datasource=tranquility`
+      );
+      
+      if (corpResponse.ok) {
+        const corpInfo = await corpResponse.json();
+        corporationName = corpInfo.name;
+      }
+    }
+
     // Calculate token expiration
     const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
     const scopes = characterData.Scopes ? characterData.Scopes.split(' ') : [];
@@ -118,6 +146,8 @@ serve(async (req) => {
             character_id: characterData.CharacterID,
             character_name: characterData.CharacterName,
             character_owner_hash: characterData.CharacterOwnerHash,
+            corporation_id: corporationId,
+            corporation_name: corporationName,
             access_token: tokenData.access_token,
             refresh_token: tokenData.refresh_token,
             expires_at: expiresAt.toISOString(),
@@ -195,6 +225,8 @@ serve(async (req) => {
           character_id: characterData.CharacterID,
           character_name: characterData.CharacterName,
           character_owner_hash: characterData.CharacterOwnerHash,
+          corporation_id: corporationId,
+          corporation_name: corporationName,
           access_token: tokenData.access_token,
           refresh_token: tokenData.refresh_token,
           expires_at: expiresAt.toISOString(),

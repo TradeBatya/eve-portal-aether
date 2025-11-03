@@ -20,6 +20,8 @@ export type Database = {
           character_id: number
           character_name: string
           character_owner_hash: string
+          corporation_id: number | null
+          corporation_name: string | null
           created_at: string
           expires_at: string
           id: string
@@ -33,6 +35,8 @@ export type Database = {
           character_id: number
           character_name: string
           character_owner_hash: string
+          corporation_id?: number | null
+          corporation_name?: string | null
           created_at?: string
           expires_at: string
           id?: string
@@ -46,6 +50,8 @@ export type Database = {
           character_id?: number
           character_name?: string
           character_owner_hash?: string
+          corporation_id?: number | null
+          corporation_name?: string | null
           created_at?: string
           expires_at?: string
           id?: string

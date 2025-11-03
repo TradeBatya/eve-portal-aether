@@ -99,14 +99,6 @@ export function SideNav({ isOpen, onToggle }: SideNavProps) {
             <Radio className="h-5 w-5" />
             <span className="font-medium">{language === 'en' ? 'Intel' : 'Разведка'}</span>
           </button>
-
-          <button
-            onClick={() => { navigate('/doctrines'); onToggle(); }}
-            className="w-full flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-muted text-foreground transition-all duration-200"
-          >
-            <Ship className="h-5 w-5" />
-            <span className="font-medium">{language === 'en' ? 'Doctrines' : 'Доктрины'}</span>
-          </button>
         </div>
 
         {/* Footer */}

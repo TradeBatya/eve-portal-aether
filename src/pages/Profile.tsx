@@ -27,6 +27,7 @@ interface EveCharacter {
   id: string;
   character_id: number;
   character_name: string;
+  corporation_name: string | null;
   created_at: string;
 }
 
@@ -101,7 +102,7 @@ const Profile = () => {
     try {
       const { data, error } = await supabase
         .from('eve_characters')
-        .select('id, character_id, character_name, created_at')
+        .select('id, character_id, character_name, corporation_name, created_at')
         .eq('user_id', user!.id)
         .order('created_at', { ascending: true });
 
@@ -427,6 +428,11 @@ const Profile = () => {
                               />
                               <div>
                                 <p className="font-semibold">{char.character_name}</p>
+                                {char.corporation_name && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {char.corporation_name}
+                                  </p>
+                                )}
                                 <p className="text-xs text-muted-foreground">
                                   {language === "en" ? "ID:" : "ID:"} {char.character_id}
                                 </p>

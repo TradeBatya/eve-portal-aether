@@ -28,8 +28,6 @@ export default function Auth() {
       signUpButton: 'Create Account',
       signInDesc: 'Enter your credentials to access your account',
       signUpDesc: 'Create a new account to join Advent Coalition',
-      eveLogin: 'Advent Coalition Alliance Auth',
-      orDivider: 'OR',
     },
     ru: {
       title: 'Авторизация',
@@ -41,8 +39,6 @@ export default function Auth() {
       signUpButton: 'Создать аккаунт',
       signInDesc: 'Введите свои данные для входа',
       signUpDesc: 'Создайте новый аккаунт для вступления в Advent Coalition',
-      eveLogin: 'Advent Coalition Alliance Auth',
-      orDivider: 'ИЛИ',
     },
   }[language];
 
@@ -66,90 +62,6 @@ export default function Auth() {
     setLoading(false);
   };
 
-  const handleEveLogin = () => {
-    const clientId = '9b9086e27f4940d8a8c64c2881944375';
-    const redirectUri = `${window.location.origin}/auth/eve/callback`;
-    const state = Math.random().toString(36).substring(7);
-    
-    const scopes = [
-      'publicData',
-      'esi-calendar.respond_calendar_events.v1',
-      'esi-calendar.read_calendar_events.v1',
-      'esi-location.read_location.v1',
-      'esi-location.read_ship_type.v1',
-      'esi-mail.organize_mail.v1',
-      'esi-mail.read_mail.v1',
-      'esi-mail.send_mail.v1',
-      'esi-skills.read_skills.v1',
-      'esi-skills.read_skillqueue.v1',
-      'esi-wallet.read_character_wallet.v1',
-      'esi-wallet.read_corporation_wallet.v1',
-      'esi-search.search_structures.v1',
-      'esi-clones.read_clones.v1',
-      'esi-characters.read_contacts.v1',
-      'esi-universe.read_structures.v1',
-      'esi-killmails.read_killmails.v1',
-      'esi-corporations.read_corporation_membership.v1',
-      'esi-assets.read_assets.v1',
-      'esi-planets.manage_planets.v1',
-      'esi-fleets.read_fleet.v1',
-      'esi-fleets.write_fleet.v1',
-      'esi-ui.open_window.v1',
-      'esi-ui.write_waypoint.v1',
-      'esi-characters.write_contacts.v1',
-      'esi-fittings.read_fittings.v1',
-      'esi-fittings.write_fittings.v1',
-      'esi-markets.structure_markets.v1',
-      'esi-corporations.read_structures.v1',
-      'esi-characters.read_loyalty.v1',
-      'esi-characters.read_chat_channels.v1',
-      'esi-characters.read_medals.v1',
-      'esi-characters.read_standings.v1',
-      'esi-characters.read_agents_research.v1',
-      'esi-industry.read_character_jobs.v1',
-      'esi-markets.read_character_orders.v1',
-      'esi-characters.read_blueprints.v1',
-      'esi-characters.read_corporation_roles.v1',
-      'esi-location.read_online.v1',
-      'esi-contracts.read_character_contracts.v1',
-      'esi-clones.read_implants.v1',
-      'esi-characters.read_fatigue.v1',
-      'esi-killmails.read_corporation_killmails.v1',
-      'esi-corporations.track_members.v1',
-      'esi-wallet.read_corporation_wallets.v1',
-      'esi-characters.read_notifications.v1',
-      'esi-corporations.read_divisions.v1',
-      'esi-corporations.read_contacts.v1',
-      'esi-assets.read_corporation_assets.v1',
-      'esi-corporations.read_titles.v1',
-      'esi-corporations.read_blueprints.v1',
-      'esi-contracts.read_corporation_contracts.v1',
-      'esi-corporations.read_standings.v1',
-      'esi-corporations.read_starbases.v1',
-      'esi-industry.read_corporation_jobs.v1',
-      'esi-markets.read_corporation_orders.v1',
-      'esi-corporations.read_container_logs.v1',
-      'esi-industry.read_character_mining.v1',
-      'esi-industry.read_corporation_mining.v1',
-      'esi-planets.read_customs_offices.v1',
-      'esi-corporations.read_facilities.v1',
-      'esi-corporations.read_medals.v1',
-      'esi-characters.read_titles.v1',
-      'esi-alliances.read_contacts.v1',
-      'esi-characters.read_fw_stats.v1',
-      'esi-corporations.read_fw_stats.v1',
-      'esi-corporations.read_projects.v1'
-    ].join(' ');
-    
-    const authUrl = `https://login.eveonline.com/v2/oauth/authorize/?` +
-      `response_type=code&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `client_id=${clientId}&` +
-      `scope=${encodeURIComponent(scopes)}&` +
-      `state=${state}`;
-    
-    window.location.href = authUrl;
-  };
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
@@ -160,24 +72,6 @@ export default function Auth() {
           <CardTitle className="text-3xl font-orbitron">{t.title}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-6">
-            <Button 
-              onClick={handleEveLogin}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900"
-              size="lg"
-            >
-              {t.eveLogin}
-            </Button>
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">{t.orDivider}</span>
-              </div>
-            </div>
-          </div>
-          
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">{t.signIn}</TabsTrigger>

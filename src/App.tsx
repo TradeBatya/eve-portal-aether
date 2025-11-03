@@ -11,7 +11,6 @@ import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import Operations from "./pages/Operations";
 import Intel from "./pages/Intel";
-import Doctrines from "./pages/Doctrines";
 import EveCallback from "./pages/EveCallback";
 import NotFound from "./pages/NotFound";
 
@@ -33,7 +32,6 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/operations" element={<Operations />} />
               <Route path="/intel" element={<Intel />} />
-              <Route path="/doctrines" element={<Doctrines />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
