@@ -17,12 +17,13 @@ const DiscordCallback = () => {
       const code = params.get('code');
       const state = params.get('state');
       const error = params.get('error');
+      const errorDescription = params.get('error_description');
 
       if (error) {
-        console.error('Discord OAuth error:', error);
+        console.error('Discord OAuth error:', error, errorDescription);
         toast({
           title: 'Ошибка авторизации',
-          description: 'Не удалось подключить Discord аккаунт',
+          description: errorDescription || 'Не удалось подключить Discord аккаунт',
           variant: 'destructive',
         });
         navigate('/profile');
@@ -38,6 +39,21 @@ const DiscordCallback = () => {
         navigate('/profile');
         return;
       }
+
+      // CSRF validation
+      const storedState = sessionStorage.getItem('discord_oauth_state');
+      if (!storedState || storedState !== state) {
+        toast({
+          title: 'Ошибка безопасности',
+          description: 'Неверный state параметр',
+          variant: 'destructive',
+        });
+        navigate('/profile');
+        return;
+      }
+
+      // Clear stored state
+      sessionStorage.removeItem('discord_oauth_state');
 
       if (!user) {
         toast({

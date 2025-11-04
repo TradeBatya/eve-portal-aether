@@ -247,9 +247,12 @@ const Profile = () => {
 
   const handleConnectDiscord = () => {
     const clientId = '1434699284179320932';
-    const redirectUri = `${window.location.origin}/auth/discord/callback`;
-    const scope = 'identify email';
+    const redirectUri = 'https://preview--eve-portal-aether.lovable.app/auth/discord/callback';
+    const scope = 'identify email guilds connections';
     const state = `discord_${user?.id}_${Date.now()}`;
+    
+    // Store state in sessionStorage for CSRF validation
+    sessionStorage.setItem('discord_oauth_state', state);
     
     const authUrl = `https://discord.com/oauth2/authorize?` +
       `client_id=${clientId}&` +

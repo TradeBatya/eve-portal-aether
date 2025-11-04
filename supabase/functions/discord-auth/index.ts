@@ -28,6 +28,8 @@ serve(async (req) => {
     }
 
     // Exchange code for access token
+    const redirectUri = 'https://preview--eve-portal-aether.lovable.app/auth/discord/callback';
+    
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
       headers: {
@@ -38,7 +40,7 @@ serve(async (req) => {
         client_secret: DISCORD_CLIENT_SECRET,
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: `${new URL(req.url).origin.replace('functions.supabase.co', 'lovable.app')}/auth/discord/callback`,
+        redirect_uri: redirectUri,
       }),
     });
 
@@ -72,11 +74,16 @@ serve(async (req) => {
     // Update user profile with Discord info
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Format username based on discriminator
+    const formattedUsername = discordUser.discriminator === '0' 
+      ? discordUser.username 
+      : `${discordUser.username}#${discordUser.discriminator}`;
+
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
         discord_user_id: discordUser.id,
-        discord_username: `${discordUser.username}#${discordUser.discriminator}`,
+        discord_username: formattedUsername,
         discord_avatar: discordUser.avatar,
         discord_email: discordUser.email,
         discord_access_token: access_token,
@@ -97,7 +104,7 @@ serve(async (req) => {
         success: true,
         discordUser: {
           id: discordUser.id,
-          username: `${discordUser.username}#${discordUser.discriminator}`,
+          username: formattedUsername,
           avatar: discordUser.avatar,
           email: discordUser.email,
         }
