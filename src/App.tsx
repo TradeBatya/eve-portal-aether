@@ -12,6 +12,7 @@ import Profile from "./pages/Profile";
 import Operations from "./pages/Operations";
 import Intel from "./pages/Intel";
 import EveCallback from "./pages/EveCallback";
+import DiscordCallback from "./pages/DiscordCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/eve/callback" element={<EveCallback />} />
+              <Route path="/auth/discord/callback" element={<DiscordCallback />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/operations" element={<Operations />} />

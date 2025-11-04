@@ -291,7 +291,13 @@ export type Database = {
           alliance_auth_id: string | null
           alliance_auth_username: string | null
           created_at: string
+          discord_access_token: string | null
+          discord_avatar: string | null
+          discord_connected_at: string | null
+          discord_email: string | null
           discord_id: string | null
+          discord_refresh_token: string | null
+          discord_user_id: string | null
           discord_username: string | null
           display_name: string | null
           id: string
@@ -302,7 +308,13 @@ export type Database = {
           alliance_auth_id?: string | null
           alliance_auth_username?: string | null
           created_at?: string
+          discord_access_token?: string | null
+          discord_avatar?: string | null
+          discord_connected_at?: string | null
+          discord_email?: string | null
           discord_id?: string | null
+          discord_refresh_token?: string | null
+          discord_user_id?: string | null
           discord_username?: string | null
           display_name?: string | null
           id: string
@@ -313,7 +325,13 @@ export type Database = {
           alliance_auth_id?: string | null
           alliance_auth_username?: string | null
           created_at?: string
+          discord_access_token?: string | null
+          discord_avatar?: string | null
+          discord_connected_at?: string | null
+          discord_email?: string | null
           discord_id?: string | null
+          discord_refresh_token?: string | null
+          discord_user_id?: string | null
           discord_username?: string | null
           display_name?: string | null
           id?: string
