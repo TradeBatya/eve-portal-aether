@@ -36,6 +36,20 @@ interface EveCharacter {
   created_at: string;
 }
 
+const createEmptyProfile = (): Profile => ({
+  id: "",
+  display_name: "",
+  discord_id: "",
+  discord_username: "",
+  discord_user_id: "",
+  discord_avatar: "",
+  discord_email: "",
+  discord_connected_at: "",
+  alliance_auth_id: "",
+  alliance_auth_username: "",
+  timezone: "",
+});
+
 const Profile = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -44,19 +58,7 @@ const Profile = () => {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<Profile>({
-    id: "",
-    display_name: "",
-    discord_id: "",
-    discord_username: "",
-    discord_user_id: "",
-    discord_avatar: "",
-    discord_email: "",
-    discord_connected_at: "",
-    alliance_auth_id: "",
-    alliance_auth_username: "",
-    timezone: "",
-  });
+  const [profile, setProfile] = useState<Profile>(createEmptyProfile());
   const [deleting, setDeleting] = useState(false);
   const [eveCharacters, setEveCharacters] = useState<EveCharacter[]>([]);
   const [loadingCharacters, setLoadingCharacters] = useState(false);
@@ -69,20 +71,29 @@ const Profile = () => {
 
   useEffect(() => {
     if (user) {
-      loadProfile();
-      loadEveCharacters();
+      setLoading(true);
+      loadProfile(user.id);
+      loadEveCharacters(user.id);
+    } else {
+      setProfile(createEmptyProfile());
+      setEveCharacters([]);
+      setLoading(false);
     }
   }, [user]);
 
-  const loadProfile = async () => {
+  const loadProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user!.id)
+        .eq("id", userId)
         .maybeSingle();
 
       if (error) throw error;
+
+      if (!user || user.id !== userId) {
+        return;
+      }
 
       if (data) {
         setProfile(data);
@@ -90,10 +101,10 @@ const Profile = () => {
         // Create profile if it doesn't exist
         const { error: insertError } = await supabase
           .from("profiles")
-          .insert({ id: user!.id });
+          .insert({ id: userId });
         
         if (insertError) throw insertError;
-        setProfile({ ...profile, id: user!.id });
+        setProfile((prev) => ({ ...prev, id: userId }));
       }
     } catch (error: any) {
       toast({
@@ -106,17 +117,24 @@ const Profile = () => {
     }
   };
 
-  const loadEveCharacters = async () => {
+  const loadEveCharacters = async (userId: string) => {
     setLoadingCharacters(true);
     try {
+      if (!userId) {
+        setEveCharacters([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('eve_characters')
         .select('id, character_id, character_name, corporation_name, created_at')
-        .eq('user_id', user!.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setEveCharacters(data || []);
+      if (user && user.id === userId) {
+        setEveCharacters(data || []);
+      }
     } catch (error: any) {
       toast({
         title: language === "en" ? "Error" : "Ошибка",
@@ -129,6 +147,15 @@ const Profile = () => {
   };
 
   const handleAddEveCharacter = () => {
+    if (!user?.id) {
+      toast({
+        title: language === "en" ? "Authentication required" : "Требуется авторизация",
+        description: language === "en" ? "Please sign in to manage characters" : "Войдите, чтобы управлять персонажами",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (eveCharacters.length >= 3) {
       toast({
         title: language === "en" ? "Limit Reached" : "Достигнут лимит",
@@ -140,7 +167,7 @@ const Profile = () => {
 
     const clientId = '9b9086e27f4940d8a8c64c2881944375';
     const redirectUri = `${window.location.origin}/auth/eve/callback`;
-    const state = `add_character_${user!.id}`;
+    const state = `add_character_${user.id}`;
     
     const scopes = [
       'publicData',
@@ -266,6 +293,16 @@ const Profile = () => {
   };
 
   const handleDisconnectDiscord = async () => {
+    const userId = user?.id;
+    if (!userId) {
+      toast({
+        title: language === "en" ? "Authentication required" : "Требуется авторизация",
+        description: language === "en" ? "Please sign in to manage Discord" : "Войдите, чтобы управлять Discord",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -278,18 +315,18 @@ const Profile = () => {
           discord_refresh_token: null,
           discord_connected_at: null,
         })
-        .eq('id', user!.id);
+        .eq('id', userId);
 
       if (error) throw error;
 
-      setProfile({
-        ...profile,
+      setProfile((prev) => ({
+        ...prev,
         discord_user_id: null,
         discord_username: null,
         discord_avatar: null,
         discord_email: null,
         discord_connected_at: null,
-      });
+      }));
 
       toast({
         title: language === "en" ? "Disconnected" : "Отключено",
@@ -305,6 +342,16 @@ const Profile = () => {
   };
 
   const handleSave = async () => {
+    const userId = user?.id;
+    if (!userId) {
+      toast({
+        title: language === "en" ? "Authentication required" : "Требуется авторизация",
+        description: language === "en" ? "Please sign in to save changes" : "Войдите, чтобы сохранить изменения",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const { error } = await supabase
@@ -317,7 +364,7 @@ const Profile = () => {
           alliance_auth_username: profile.alliance_auth_username,
           timezone: profile.timezone,
         })
-        .eq("id", user!.id);
+        .eq("id", userId);
 
       if (error) throw error;
 
@@ -337,13 +384,23 @@ const Profile = () => {
   };
 
   const handleDeleteAccount = async () => {
+    const userId = user?.id;
+    if (!userId) {
+      toast({
+        title: language === "en" ? "Authentication required" : "Требуется авторизация",
+        description: language === "en" ? "Please sign in to manage your account" : "Войдите, чтобы управлять аккаунтом",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setDeleting(true);
     try {
       // First delete profile data
       const { error: profileError } = await supabase
         .from("profiles")
         .delete()
-        .eq("id", user!.id);
+        .eq("id", userId);
       
       if (profileError) throw profileError;
 
@@ -862,14 +919,14 @@ const Profile = () => {
                 </div>
               )}
             </CardContent>
-          </Card>
+            </Card>
 
-          {/* User Roles & Permissions */}
-          <UserRolesCard userId={user!.id} />
+            {/* User Roles & Permissions */}
+            {user && <UserRolesCard userId={user.id} />}
 
-          {/* Save Button */}
-          <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
-            {saving ? (
+            {/* Save Button */}
+            <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
+              {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {language === "en" ? "Saving..." : "Сохранение..."}
