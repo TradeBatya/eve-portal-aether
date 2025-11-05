@@ -865,7 +865,7 @@ const Profile = () => {
           </Card>
 
           {/* User Roles & Permissions */}
-          <UserRolesCard userId={user!.id} />
+          {user && <UserRolesCard userId={user.id} />}
 
           {/* Save Button */}
           <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
