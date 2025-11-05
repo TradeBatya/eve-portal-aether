@@ -7,11 +7,16 @@ import { useToast } from '@/hooks/use-toast';
 
 const DiscordCallback = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const [status, setStatus] = useState('Обработка авторизации Discord...');
 
   useEffect(() => {
+    // Wait for auth to load
+    if (loading) {
+      return;
+    }
+
     const handleCallback = async () => {
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
@@ -61,7 +66,7 @@ const DiscordCallback = () => {
           description: 'Пользователь не авторизован',
           variant: 'destructive',
         });
-        navigate('/auth');
+        navigate('/profile');
         return;
       }
 
@@ -102,7 +107,7 @@ const DiscordCallback = () => {
     };
 
     handleCallback();
-  }, [navigate, user, toast]);
+  }, [navigate, user, loading, toast]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
