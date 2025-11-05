@@ -6,7 +6,8 @@ import { Loader2, Shield, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UserRole {
-  role: string;
+  role_id: string;
+  role_name: string;
   granted_at: string;
   expires_at: string | null;
 }
@@ -57,7 +58,7 @@ export function UserRolesCard({ userId }: UserRolesCardProps) {
       // Load user roles
       const { data: userRolesData, error: rolesError } = await supabase
         .from('user_roles')
-        .select('role, granted_at, expires_at')
+        .select('role_id, role_name, granted_at, expires_at')
         .eq('user_id', userId);
 
       if (rolesError) throw rolesError;
@@ -71,9 +72,9 @@ export function UserRolesCard({ userId }: UserRolesCardProps) {
       if (allRolesError) throw allRolesError;
       
       // Cast permissions from Json to string[]
-      const rolesWithPermissions = (allRoles || []).map(role => ({
+      const rolesWithPermissions = (allRoles || []).map((role) => ({
         ...role,
-        permissions: Array.isArray(role.permissions) ? role.permissions as string[] : []
+        permissions: Array.isArray(role.permissions) ? (role.permissions as string[]) : [],
       }));
       setRoles(rolesWithPermissions);
 
@@ -112,6 +113,11 @@ export function UserRolesCard({ userId }: UserRolesCardProps) {
     view_content: { en: 'View Content', ru: 'Просмотр контента' },
     create_intel: { en: 'Create Intel', ru: 'Создание разведданных' },
     signup_operations: { en: 'Sign Up for Operations', ru: 'Запись на операции' },
+    'user.manage': { en: 'Manage Users', ru: 'Управление пользователями' },
+    'roles.manage': { en: 'Manage Roles', ru: 'Управление ролями' },
+    'corporation.manage': { en: 'Manage Corporations', ru: 'Управление корпорациями' },
+    'settings.manage': { en: 'Manage Settings', ru: 'Управление настройками' },
+    'discord.manage': { en: 'Manage Discord', ru: 'Управление Discord' },
   };
 
   if (loading) {
@@ -140,15 +146,15 @@ export function UserRolesCard({ userId }: UserRolesCardProps) {
             <p className="text-sm text-muted-foreground">{t.noRoles}</p>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {userRoles.map((userRole) => {
-                const roleInfo = roles.find((r) => r.name === userRole.role);
+                {userRoles.map((userRole) => {
+                  const roleInfo = roles.find((r) => r.name === userRole.role_name);
                 return (
                   <Badge
-                    key={userRole.role}
+                      key={userRole.role_id}
                     variant={getRoleBadgeVariant(roleInfo?.hierarchy_level || 0)}
                     className="text-sm px-3 py-1"
                   >
-                    {roleInfo?.display_name || userRole.role}
+                      {roleInfo?.display_name || userRole.role_name}
                   </Badge>
                 );
               })}

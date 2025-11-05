@@ -29,13 +29,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user has admin permission
-    const { data: hasAdminRole } = await supabase.rpc('has_role', {
-      _user_id: user.id,
-      _role: 'admin'
-    });
+      // Check if user has admin-level privileges (hierarchy >= 80)
+      const { data: hasAdminRole, error: adminRoleError } = await supabase.rpc('has_role_level', {
+        user_uuid: user.id,
+        min_level: 80,
+      });
 
-    if (!hasAdminRole) {
+      if (adminRoleError || !hasAdminRole) {
       return new Response(
         JSON.stringify({ error: 'Forbidden: Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -45,12 +45,26 @@ Deno.serve(async (req) => {
     const { action, userId, roleName, expiresAt, reason } = await req.json();
 
     if (action === 'grant') {
-      // Grant role to user
-      const { data: existingRole, error: checkError } = await supabase
+        // Look up the role identifier
+        const { data: roleRecord, error: roleLookupError } = await supabase
+          .from('roles')
+          .select('id, name')
+          .eq('name', roleName)
+          .maybeSingle();
+
+        if (roleLookupError || !roleRecord) {
+          return new Response(
+            JSON.stringify({ error: 'Role not found' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Grant role to user
+        const { data: existingRole, error: checkError } = await supabase
         .from('user_roles')
         .select('id')
         .eq('user_id', userId)
-        .eq('role', roleName)
+          .eq('role_id', roleRecord.id)
         .maybeSingle();
 
       if (existingRole) {
@@ -64,7 +78,8 @@ Deno.serve(async (req) => {
         .from('user_roles')
         .insert({
           user_id: userId,
-          role: roleName,
+            role_id: roleRecord.id,
+            role_name: roleRecord.name,
           granted_by: user.id,
           granted_at: new Date().toISOString(),
           expires_at: expiresAt || null,
@@ -75,7 +90,7 @@ Deno.serve(async (req) => {
       // Log the action
       await supabase.from('role_assignment_logs').insert({
         user_id: userId,
-        role_name: roleName,
+          role_name: roleRecord.name,
         action: 'granted',
         granted_by: user.id,
         reason: reason || 'Manual assignment by admin',
@@ -88,19 +103,32 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'revoke') {
+        const { data: roleRecord, error: roleLookupError } = await supabase
+          .from('roles')
+          .select('id, name')
+          .eq('name', roleName)
+          .maybeSingle();
+
+        if (roleLookupError || !roleRecord) {
+          return new Response(
+            JSON.stringify({ error: 'Role not found' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
       // Revoke role from user
       const { error: deleteError } = await supabase
         .from('user_roles')
         .delete()
         .eq('user_id', userId)
-        .eq('role', roleName);
+          .eq('role_id', roleRecord.id);
 
       if (deleteError) throw deleteError;
 
       // Log the action
       await supabase.from('role_assignment_logs').insert({
         user_id: userId,
-        role_name: roleName,
+          role_name: roleRecord.name,
         action: 'revoked',
         granted_by: user.id,
         reason: reason || 'Manual revocation by admin',
@@ -125,20 +153,28 @@ Deno.serve(async (req) => {
 
       if (profilesError) throw profilesError;
 
-      // Get roles for each user
-      const usersWithRoles = await Promise.all(
-        profiles.map(async (profile) => {
-          const { data: userRoles } = await supabase
-            .from('user_roles')
-            .select('role, granted_at, expires_at')
-            .eq('user_id', profile.id);
+        const { data: userRoles, error: userRolesError } = await supabase
+          .from('user_roles')
+          .select('user_id, role_id, role_name, granted_at, expires_at');
 
-          return {
-            ...profile,
-            roles: userRoles || [],
-          };
-        })
-      );
+        if (userRolesError) throw userRolesError;
+
+        const rolesByUser = (userRoles || []).reduce<Record<string, any[]>>((acc, current) => {
+          const list = acc[current.user_id] ?? [];
+          list.push({
+            role_id: current.role_id,
+            role_name: current.role_name,
+            granted_at: current.granted_at,
+            expires_at: current.expires_at,
+          });
+          acc[current.user_id] = list;
+          return acc;
+        }, {});
+
+        const usersWithRoles = profiles.map((profile) => ({
+          ...profile,
+          roles: rolesByUser[profile.id] ?? [],
+        }));
 
       return new Response(
         JSON.stringify({ users: usersWithRoles }),

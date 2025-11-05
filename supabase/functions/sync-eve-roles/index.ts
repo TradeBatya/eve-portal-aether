@@ -57,9 +57,9 @@ Deno.serve(async (req) => {
     console.log('EVE roles retrieved:', eveRoles.roles);
 
     // Get corporation role mappings
-    const { data: mappings, error: mappingsError } = await supabaseAdmin
+      const { data: mappings, error: mappingsError } = await supabaseAdmin
       .from('corporation_role_mappings')
-      .select('eve_role_name, system_role_name, auto_assign')
+        .select('eve_role_name, system_role, system_role_id, auto_assign')
       .or(`corporation_id.eq.${character.corporation_id},corporation_id.eq.0`)
       .eq('auto_assign', true);
 
@@ -67,25 +67,48 @@ Deno.serve(async (req) => {
       console.error('Error fetching mappings:', mappingsError);
     }
 
-    const rolesToGrant: string[] = [];
+      const rolesToGrant: Array<{ role_id: string; role_name: string }> = [];
+
+      const { data: roleDirectory, error: roleDirectoryError } = await supabaseAdmin
+        .from('roles')
+        .select('id, name');
+
+      if (roleDirectoryError) {
+        console.error('Error loading roles directory:', roleDirectoryError);
+      }
+
+      const roleMap = new Map<string, string>();
+      (roleDirectory || []).forEach((r) => {
+        roleMap.set(r.name.toLowerCase(), r.id);
+      });
 
     // Map EVE roles to system roles
     if (mappings && mappings.length > 0) {
       for (const mapping of mappings) {
         if (eveRoles.roles.includes(mapping.eve_role_name)) {
-          rolesToGrant.push(mapping.system_role_name);
+            const roleName = mapping.system_role;
+            if (!roleName) continue;
+
+            let roleId = mapping.system_role_id || (roleName ? roleMap.get(roleName.toLowerCase()) : undefined);
+
+            if (!roleId) {
+              console.warn(`Unable to resolve system role ID for mapping ${roleName}`);
+              continue;
+            }
+
+            rolesToGrant.push({ role_id: roleId, role_name: roleName });
         }
       }
     }
 
     // Grant roles that should be assigned
-    for (const roleToGrant of rolesToGrant) {
+      for (const { role_id, role_name } of rolesToGrant) {
       // Check if user already has this role
       const { data: existingRole } = await supabaseAdmin
         .from('user_roles')
         .select('id')
         .eq('user_id', userId)
-        .eq('role', roleToGrant)
+          .eq('role_id', role_id)
         .maybeSingle();
 
       if (!existingRole) {
@@ -94,24 +117,25 @@ Deno.serve(async (req) => {
           .from('user_roles')
           .insert({
             user_id: userId,
-            role: roleToGrant,
+              role_id,
+              role_name,
             granted_by: null, // Automatic assignment
             granted_at: new Date().toISOString(),
           });
 
         if (grantError) {
-          console.error(`Error granting role ${roleToGrant}:`, grantError);
+            console.error(`Error granting role ${role_name}:`, grantError);
         } else {
           // Log the assignment
           await supabaseAdmin.from('role_assignment_logs').insert({
             user_id: userId,
-            role_name: roleToGrant,
+              role_name,
             action: 'granted',
-            reason: `Automatic assignment from EVE role: ${roleToGrant}`,
+              reason: `Automatic assignment from EVE role: ${role_name}`,
             metadata: { character_id: character.character_id, eve_roles: eveRoles.roles },
           });
 
-          console.log(`Granted role ${roleToGrant} to user ${userId}`);
+            console.log(`Granted role ${role_name} to user ${userId}`);
         }
       }
     }
@@ -119,7 +143,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        rolesGranted: rolesToGrant,
+          rolesGranted: rolesToGrant.map((r) => r.role_name),
         eveRoles: eveRoles.roles,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
