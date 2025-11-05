@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     // Get corporation role mappings
     const { data: mappings, error: mappingsError } = await supabaseAdmin
       .from('corporation_role_mappings')
-      .select('eve_role_name, system_role_name, auto_assign')
+      .select('eve_role_name, system_role, auto_assign')
       .or(`corporation_id.eq.${character.corporation_id},corporation_id.eq.0`)
       .eq('auto_assign', true);
 
@@ -73,46 +73,68 @@ Deno.serve(async (req) => {
     if (mappings && mappings.length > 0) {
       for (const mapping of mappings) {
         if (eveRoles.roles.includes(mapping.eve_role_name)) {
-          rolesToGrant.push(mapping.system_role_name);
+          rolesToGrant.push(mapping.system_role);
         }
       }
     }
 
-    // Grant roles that should be assigned
-    for (const roleToGrant of rolesToGrant) {
-      // Check if user already has this role
-      const { data: existingRole } = await supabaseAdmin
-        .from('user_roles')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('role', roleToGrant)
-        .maybeSingle();
+    const uniqueSystemRoles = Array.from(new Set(rolesToGrant));
 
-      if (!existingRole) {
-        // Grant the role
+    if (uniqueSystemRoles.length > 0) {
+      const { data: targetRoles, error: rolesLookupError } = await supabaseAdmin
+        .from('roles')
+        .select('id, name')
+        .in('name', uniqueSystemRoles);
+
+      if (rolesLookupError) {
+        throw rolesLookupError;
+      }
+
+      const roleMap = new Map<string, string>();
+      (targetRoles || []).forEach((role) => roleMap.set(role.name, role.id));
+
+      // Grant roles that should be assigned
+      for (const roleToGrant of rolesToGrant) {
+        const roleId = roleMap.get(roleToGrant);
+        if (!roleId) {
+          console.warn(`Role ${roleToGrant} not found in roles table; skipping assignment`);
+          continue;
+        }
+
+        const { data: existingRole } = await supabaseAdmin
+          .from('user_roles')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('role_id', roleId)
+          .maybeSingle();
+
+        if (existingRole) {
+          continue;
+        }
+
         const { error: grantError } = await supabaseAdmin
           .from('user_roles')
           .insert({
             user_id: userId,
-            role: roleToGrant,
-            granted_by: null, // Automatic assignment
+            role_id: roleId,
+            granted_by: null,
             granted_at: new Date().toISOString(),
           });
 
         if (grantError) {
           console.error(`Error granting role ${roleToGrant}:`, grantError);
-        } else {
-          // Log the assignment
-          await supabaseAdmin.from('role_assignment_logs').insert({
-            user_id: userId,
-            role_name: roleToGrant,
-            action: 'granted',
-            reason: `Automatic assignment from EVE role: ${roleToGrant}`,
-            metadata: { character_id: character.character_id, eve_roles: eveRoles.roles },
-          });
-
-          console.log(`Granted role ${roleToGrant} to user ${userId}`);
+          continue;
         }
+
+        await supabaseAdmin.from('role_assignment_logs').insert({
+          user_id: userId,
+          role_name: roleToGrant,
+          action: 'granted',
+          reason: `Automatic assignment from EVE role: ${roleToGrant}`,
+          metadata: { character_id: character.character_id, eve_roles: eveRoles.roles },
+        });
+
+        console.log(`Granted role ${roleToGrant} to user ${userId}`);
       }
     }
 

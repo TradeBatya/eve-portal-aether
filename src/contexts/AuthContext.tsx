@@ -55,14 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkAdminRole = async (userId: string) => {
-    const { data } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .maybeSingle();
-    
-    setIsAdmin(!!data);
+    const { data } = await supabase.rpc('has_minimum_role_level', {
+      user_uuid: userId,
+      required_level: 80,
+    });
+
+    setIsAdmin(Boolean(data));
   };
 
   const signIn = async (email: string, password: string) => {

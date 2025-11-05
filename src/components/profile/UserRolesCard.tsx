@@ -6,17 +6,11 @@ import { Loader2, Shield, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UserRole {
-  role: string;
-  granted_at: string;
-  expires_at: string | null;
-}
-
-interface Role {
   name: string;
-  display_name: string;
-  description: string;
   hierarchy_level: number;
   permissions: string[];
+  granted_at: string;
+  expires_at: string | null;
 }
 
 interface UserRolesCardProps {
@@ -26,7 +20,6 @@ interface UserRolesCardProps {
 export function UserRolesCard({ userId }: UserRolesCardProps) {
   const { language } = useLanguage();
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,36 +47,45 @@ export function UserRolesCard({ userId }: UserRolesCardProps) {
   const loadRolesAndPermissions = async () => {
     setLoading(true);
     try {
-      // Load user roles
+      // Load user roles with metadata
       const { data: userRolesData, error: rolesError } = await supabase
         .from('user_roles')
-        .select('role, granted_at, expires_at')
+        .select('granted_at, expires_at, roles(name, hierarchy_level, permissions)')
         .eq('user_id', userId);
 
       if (rolesError) throw rolesError;
-      setUserRoles(userRolesData || []);
 
-      // Load all roles to get details
-      const { data: allRoles, error: allRolesError } = await supabase
-        .from('roles')
-        .select('name, display_name, description, hierarchy_level, permissions');
+      const mappedRoles: UserRole[] = (userRolesData || [])
+        .map((entry) => {
+          const roleMeta = entry.roles as {
+            name?: string;
+            hierarchy_level?: number;
+            permissions?: unknown;
+          } | null;
 
-      if (allRolesError) throw allRolesError;
-      
-      // Cast permissions from Json to string[]
-      const rolesWithPermissions = (allRoles || []).map(role => ({
-        ...role,
-        permissions: Array.isArray(role.permissions) ? role.permissions as string[] : []
-      }));
-      setRoles(rolesWithPermissions);
+          const permissions = Array.isArray(roleMeta?.permissions)
+            ? (roleMeta?.permissions as string[])
+            : [];
+
+          return {
+            name: roleMeta?.name ?? '',
+            hierarchy_level: roleMeta?.hierarchy_level ?? 0,
+            permissions,
+            granted_at: entry.granted_at,
+            expires_at: entry.expires_at,
+          };
+        })
+        .filter((role) => role.name.length > 0);
+
+      setUserRoles(mappedRoles);
 
       // Load user permissions
       const { data: permsData, error: permsError } = await supabase.functions.invoke('manage-roles', {
         body: { action: 'get_permissions' },
       });
 
-      if (!permsError && permsData?.permissions) {
-        setPermissions(permsData.permissions);
+      if (!permsError && Array.isArray(permsData?.permissions)) {
+        setPermissions(permsData.permissions as string[]);
       }
     } catch (error) {
       console.error('Error loading roles and permissions:', error);
@@ -100,18 +102,26 @@ export function UserRolesCard({ userId }: UserRolesCardProps) {
   };
 
   const permissionLabels: Record<string, { en: string; ru: string }> = {
+    'user.manage': { en: 'Manage Users', ru: 'Управление пользователями' },
+    'roles.manage': { en: 'Manage Roles', ru: 'Управление ролями' },
+    'corporation.manage': { en: 'Manage Corporations', ru: 'Управление корпорациями' },
+    'settings.manage': { en: 'Manage Settings', ru: 'Управление настройками' },
+    'discord.manage': { en: 'Manage Discord', ru: 'Управление Discord' },
     manage_users: { en: 'Manage Users', ru: 'Управление пользователями' },
     manage_roles: { en: 'Manage Roles', ru: 'Управление ролями' },
     manage_settings: { en: 'Manage Settings', ru: 'Управление настройками' },
     manage_content: { en: 'Manage Content', ru: 'Управление контентом' },
-    view_logs: { en: 'View Logs', ru: 'Просмотр логов' },
     manage_operations: { en: 'Manage Operations', ru: 'Управление операциями' },
     manage_intel: { en: 'Manage Intel', ru: 'Управление разведкой' },
-    create_operations: { en: 'Create Operations', ru: 'Создание операций' },
-    view_signups: { en: 'View Signups', ru: 'Просмотр записей' },
-    view_content: { en: 'View Content', ru: 'Просмотр контента' },
-    create_intel: { en: 'Create Intel', ru: 'Создание разведданных' },
-    signup_operations: { en: 'Sign Up for Operations', ru: 'Запись на операции' },
+  };
+
+  const roleLabels: Record<string, { en: string; ru: string }> = {
+    super_admin: { en: 'Super Admin', ru: 'Супер администратор' },
+    admin: { en: 'Administrator', ru: 'Администратор' },
+    moderator: { en: 'Moderator', ru: 'Модератор' },
+    corp_director: { en: 'Corporation Director', ru: 'Директор корпорации' },
+    corp_member: { en: 'Corporation Member', ru: 'Член корпорации' },
+    guest: { en: 'Guest', ru: 'Гость' },
   };
 
   if (loading) {
@@ -140,18 +150,15 @@ export function UserRolesCard({ userId }: UserRolesCardProps) {
             <p className="text-sm text-muted-foreground">{t.noRoles}</p>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {userRoles.map((userRole) => {
-                const roleInfo = roles.find((r) => r.name === userRole.role);
-                return (
-                  <Badge
-                    key={userRole.role}
-                    variant={getRoleBadgeVariant(roleInfo?.hierarchy_level || 0)}
-                    className="text-sm px-3 py-1"
-                  >
-                    {roleInfo?.display_name || userRole.role}
-                  </Badge>
-                );
-              })}
+              {userRoles.map((userRole) => (
+                <Badge
+                  key={userRole.name}
+                  variant={getRoleBadgeVariant(userRole.hierarchy_level)}
+                  className="text-sm px-3 py-1"
+                >
+                  {roleLabels[userRole.name]?.[language] || userRole.name}
+                </Badge>
+              ))}
             </div>
           )}
         </div>
