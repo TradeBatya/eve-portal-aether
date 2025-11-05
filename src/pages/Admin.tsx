@@ -11,7 +11,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Trash2, Plus, ArrowLeft } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { z } from 'zod';
+import { RoleManagement } from '@/components/admin/RoleManagement';
 
 const newsSchema = z.object({
   title_en: z.string().trim().min(1, "English title is required").max(200, "Title must be less than 200 characters"),
@@ -47,7 +49,9 @@ export default function Admin() {
 
   const t = {
     en: {
-      title: 'News Management',
+      title: 'Administration Panel',
+      newsManagement: 'News',
+      roleManagement: 'Roles',
       addNews: 'Add News',
       edit: 'Edit',
       delete: 'Delete',
@@ -66,7 +70,9 @@ export default function Admin() {
       unauthorizedDesc: 'You do not have permission to access this page',
     },
     ru: {
-      title: 'Управление новостями',
+      title: 'Панель администрирования',
+      newsManagement: 'Новости',
+      roleManagement: 'Роли',
       addNews: 'Добавить новость',
       edit: 'Редактировать',
       delete: 'Удалить',
@@ -232,47 +238,61 @@ export default function Admin() {
       <div className="container mx-auto max-w-6xl">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-orbitron font-bold text-primary">{t.title}</h1>
-          <div className="flex gap-2">
-            <Button onClick={() => openEditDialog()}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t.addNews}
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              {t.back}
-            </Button>
-          </div>
+          <Button variant="outline" onClick={() => navigate('/')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t.back}
+          </Button>
         </div>
 
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <div className="grid gap-4">
-            {news.map((item) => (
-              <Card key={item.id}>
-                <CardHeader>
-                  <CardTitle className="flex justify-between items-start">
-                    <span>{language === 'en' ? item.title_en : item.title_ru}</span>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openEditDialog(item)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleDelete(item.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {language === 'en' ? item.category_en : item.category_ru} • {item.date}
-                  </p>
-                  <p>{language === 'en' ? item.description_en : item.description_ru}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        <Tabs defaultValue="news" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="news">{t.newsManagement}</TabsTrigger>
+            <TabsTrigger value="roles">{t.roleManagement}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="news" className="space-y-4">
+            <div className="flex justify-end mb-4">
+              <Button onClick={() => openEditDialog()}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t.addNews}
+              </Button>
+            </div>
+
+            {loading ? (
+              <p>Loading...</p>
+            ) : (
+              <div className="grid gap-4">
+                {news.map((item) => (
+                  <Card key={item.id}>
+                    <CardHeader>
+                      <CardTitle className="flex justify-between items-start">
+                        <span>{language === 'en' ? item.title_en : item.title_ru}</span>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => openEditDialog(item)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDelete(item.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {language === 'en' ? item.category_en : item.category_ru} • {item.date}
+                      </p>
+                      <p>{language === 'en' ? item.description_en : item.description_ru}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="roles">
+            <RoleManagement />
+          </TabsContent>
+        </Tabs>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

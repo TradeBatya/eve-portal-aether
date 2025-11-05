@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      corporation_role_mappings: {
+        Row: {
+          auto_assign: boolean | null
+          corporation_id: number
+          created_at: string | null
+          eve_role_name: string
+          id: string
+          permissions: Json | null
+          system_role_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          auto_assign?: boolean | null
+          corporation_id: number
+          created_at?: string | null
+          eve_role_name: string
+          id?: string
+          permissions?: Json | null
+          system_role_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          auto_assign?: boolean | null
+          corporation_id?: number
+          created_at?: string | null
+          eve_role_name?: string
+          id?: string
+          permissions?: Json | null
+          system_role_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corporation_role_mappings_system_role_name_fkey"
+            columns: ["system_role_name"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
       eve_characters: {
         Row: {
           access_token: string
@@ -340,21 +381,99 @@ export type Database = {
         }
         Relationships: []
       }
+      role_assignment_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          granted_by: string | null
+          id: string
+          metadata: Json | null
+          reason: string | null
+          role_name: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          granted_by?: string | null
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          role_name: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          granted_by?: string | null
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          role_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      roles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_name: string
+          hierarchy_level: number
+          id: string
+          is_system_role: boolean | null
+          name: string
+          permissions: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          hierarchy_level?: number
+          id?: string
+          is_system_role?: boolean | null
+          name: string
+          permissions?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          hierarchy_level?: number
+          id?: string
+          is_system_role?: boolean | null
+          name?: string
+          permissions?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
+          expires_at: string | null
+          granted_at: string | null
+          granted_by: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
@@ -366,6 +485,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_permissions: { Args: { user_uuid: string }; Returns: Json }
+      has_permission: {
+        Args: { permission_name: string; user_uuid: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

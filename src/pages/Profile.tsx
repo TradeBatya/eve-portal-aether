@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { SideNav } from "@/components/SideNav";
 import { Loader2, RefreshCw, Trash2, User, Shield } from "lucide-react";
+import { UserRolesCard } from "@/components/profile/UserRolesCard";
 
 interface Profile {
   id: string;
@@ -862,6 +863,9 @@ const Profile = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* User Roles & Permissions */}
+          <UserRolesCard userId={user!.id} />
 
           {/* Save Button */}
           <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
