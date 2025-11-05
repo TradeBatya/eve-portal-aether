@@ -14,7 +14,8 @@ interface UserWithRoles {
   discord_username: string | null;
   created_at: string;
   roles: Array<{
-    role: string;
+    role_id: string;
+    role_name: string;
     granted_at: string;
     expires_at: string | null;
   }>;
@@ -200,33 +201,33 @@ export function RoleManagement() {
                   {new Date(user.created_at).toLocaleDateString()}
                 </p>
               </div>
-              <div className="flex gap-2 items-center">
-                <Select
-                  onValueChange={(roleName) => handleGrantRole(user.id, roleName)}
-                  disabled={processing !== null}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder={t.selectRole} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map((role) => (
-                      <SelectItem key={role.name} value={role.name}>
-                        {role.display_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  disabled={processing === `grant-${user.id}`}
-                >
-                  {processing === `grant-${user.id}` ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <UserPlus className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
+                <div className="flex gap-2 items-center">
+                  <Select
+                    onValueChange={(roleName) => handleGrantRole(user.id, roleName)}
+                    disabled={processing !== null}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder={t.selectRole} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map((role) => (
+                        <SelectItem key={role.name} value={role.name}>
+                          {role.display_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    disabled={processing?.startsWith(`grant-${user.id}`)}
+                  >
+                    {processing?.startsWith(`grant-${user.id}`) ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <UserPlus className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
             </div>
 
             <div>
@@ -234,33 +235,33 @@ export function RoleManagement() {
               {user.roles.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t.noRoles}</p>
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  {user.roles.map((userRole) => {
-                    const roleInfo = roles.find((r) => r.name === userRole.role);
-                    return (
-                      <Badge
-                        key={userRole.role}
-                        variant={getRoleBadgeVariant(roleInfo?.hierarchy_level || 0)}
-                        className="flex items-center gap-2"
-                      >
-                        {roleInfo?.display_name || userRole.role}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-4 w-4 p-0 hover:bg-transparent"
-                          onClick={() => handleRevokeRole(user.id, userRole.role)}
-                          disabled={processing === `revoke-${user.id}-${userRole.role}`}
+                  <div className="flex flex-wrap gap-2">
+                    {user.roles.map((userRole) => {
+                      const roleInfo = roles.find((r) => r.name === userRole.role_name);
+                      return (
+                        <Badge
+                          key={userRole.role_id}
+                          variant={getRoleBadgeVariant(roleInfo?.hierarchy_level || 0)}
+                          className="flex items-center gap-2"
                         >
-                          {processing === `revoke-${user.id}-${userRole.role}` ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <UserMinus className="h-3 w-3" />
-                          )}
-                        </Button>
-                      </Badge>
-                    );
-                  })}
-                </div>
+                          {roleInfo?.display_name || userRole.role_name}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-4 w-4 p-0 hover:bg-transparent"
+                            onClick={() => handleRevokeRole(user.id, userRole.role_name)}
+                            disabled={processing === `revoke-${user.id}-${userRole.role_name}`}
+                          >
+                            {processing === `revoke-${user.id}-${userRole.role_name}` ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <UserMinus className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
               )}
             </div>
           </div>
