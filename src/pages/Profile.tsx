@@ -75,11 +75,16 @@ const Profile = () => {
   }, [user]);
 
   const loadProfile = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user!.id)
+        .eq("id", user.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -90,10 +95,10 @@ const Profile = () => {
         // Create profile if it doesn't exist
         const { error: insertError } = await supabase
           .from("profiles")
-          .insert({ id: user!.id });
-        
+          .insert({ id: user.id });
+
         if (insertError) throw insertError;
-        setProfile({ ...profile, id: user!.id });
+        setProfile((prev) => ({ ...prev, id: user.id }));
       }
     } catch (error: any) {
       toast({
@@ -107,12 +112,17 @@ const Profile = () => {
   };
 
   const loadEveCharacters = async () => {
+    if (!user) {
+      setLoadingCharacters(false);
+      return;
+    }
+
     setLoadingCharacters(true);
     try {
       const { data, error } = await supabase
         .from('eve_characters')
         .select('id, character_id, character_name, corporation_name, created_at')
-        .eq('user_id', user!.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -129,6 +139,14 @@ const Profile = () => {
   };
 
   const handleAddEveCharacter = () => {
+    if (!user) {
+      toast({
+        title: language === "en" ? "Authentication required" : "Требуется авторизация",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (eveCharacters.length >= 3) {
       toast({
         title: language === "en" ? "Limit Reached" : "Достигнут лимит",
@@ -140,8 +158,8 @@ const Profile = () => {
 
     const clientId = '9b9086e27f4940d8a8c64c2881944375';
     const redirectUri = `${window.location.origin}/auth/eve/callback`;
-    const state = `add_character_${user!.id}`;
-    
+    const state = `add_character_${user.id}`;
+
     const scopes = [
       'publicData',
       'esi-calendar.respond_calendar_events.v1',
@@ -266,6 +284,14 @@ const Profile = () => {
   };
 
   const handleDisconnectDiscord = async () => {
+    if (!user) {
+      toast({
+        title: language === "en" ? "Authentication required" : "Требуется авторизация",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -278,7 +304,7 @@ const Profile = () => {
           discord_refresh_token: null,
           discord_connected_at: null,
         })
-        .eq('id', user!.id);
+        .eq('id', user.id);
 
       if (error) throw error;
 
@@ -305,6 +331,14 @@ const Profile = () => {
   };
 
   const handleSave = async () => {
+    if (!user) {
+      toast({
+        title: language === "en" ? "Authentication required" : "Требуется авторизация",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const { error } = await supabase
@@ -317,7 +351,7 @@ const Profile = () => {
           alliance_auth_username: profile.alliance_auth_username,
           timezone: profile.timezone,
         })
-        .eq("id", user!.id);
+        .eq("id", user.id);
 
       if (error) throw error;
 
@@ -337,14 +371,22 @@ const Profile = () => {
   };
 
   const handleDeleteAccount = async () => {
+    if (!user) {
+      toast({
+        title: language === "en" ? "Authentication required" : "Требуется авторизация",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setDeleting(true);
     try {
       // First delete profile data
       const { error: profileError } = await supabase
         .from("profiles")
         .delete()
-        .eq("id", user!.id);
-      
+        .eq("id", user.id);
+
       if (profileError) throw profileError;
 
       // Sign out - this will revoke the session
@@ -367,6 +409,14 @@ const Profile = () => {
   };
 
   if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -864,8 +914,8 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* User Roles & Permissions */}
-          <UserRolesCard userId={user!.id} />
+            {/* User Roles & Permissions */}
+            <UserRolesCard userId={user.id} />
 
           {/* Save Button */}
           <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
