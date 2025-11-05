@@ -21,7 +21,7 @@ interface Role {
 }
 
 interface UserRolesCardProps {
-  userId: string;
+  userId?: string;
 }
 
 export function UserRolesCard({ userId }: UserRolesCardProps) {
@@ -29,7 +29,7 @@ export function UserRolesCard({ userId }: UserRolesCardProps) {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(userId));
 
   const t = {
     en: {
@@ -49,17 +49,24 @@ export function UserRolesCard({ userId }: UserRolesCardProps) {
   }[language];
 
   useEffect(() => {
-    loadRolesAndPermissions();
+    if (!userId) {
+      setUserRoles([]);
+      setPermissions([]);
+      setLoading(false);
+      return;
+    }
+
+    loadRolesAndPermissions(userId);
   }, [userId]);
 
-  const loadRolesAndPermissions = async () => {
+  const loadRolesAndPermissions = async (currentUserId: string) => {
     setLoading(true);
     try {
       // Load user roles
       const { data: userRolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('role_id, role_name, granted_at, expires_at')
-        .eq('user_id', userId);
+        .eq('user_id', currentUserId);
 
       if (rolesError) throw rolesError;
       setUserRoles(userRolesData || []);
@@ -83,9 +90,7 @@ export function UserRolesCard({ userId }: UserRolesCardProps) {
         body: { action: 'get_permissions' },
       });
 
-      if (!permsError && permsData?.permissions) {
-        setPermissions(permsData.permissions);
-      }
+      setPermissions(!permsError && Array.isArray(permsData?.permissions) ? permsData.permissions : []);
     } catch (error) {
       console.error('Error loading roles and permissions:', error);
     } finally {
