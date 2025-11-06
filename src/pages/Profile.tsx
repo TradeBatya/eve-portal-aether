@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { SideNav } from "@/components/SideNav";
 import { Loader2, RefreshCw, Trash2, User, Shield } from "lucide-react";
-import { UserRolesCard } from "@/components/profile/UserRolesCard";
+import { Badge } from "@/components/ui/badge";
 
 interface Profile {
   id: string;
@@ -62,6 +62,7 @@ const Profile = () => {
   const [deleting, setDeleting] = useState(false);
   const [eveCharacters, setEveCharacters] = useState<EveCharacter[]>([]);
   const [loadingCharacters, setLoadingCharacters] = useState(false);
+  const [userRoles, setUserRoles] = useState<Array<{ role_name: string; role_id: string }>>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -74,9 +75,11 @@ const Profile = () => {
       setLoading(true);
       loadProfile(user.id);
       loadEveCharacters(user.id);
+      loadUserRoles(user.id);
     } else {
       setProfile(createEmptyProfile());
       setEveCharacters([]);
+      setUserRoles([]);
       setLoading(false);
     }
   }, [user]);
@@ -143,6 +146,28 @@ const Profile = () => {
       });
     } finally {
       setLoadingCharacters(false);
+    }
+  };
+
+  const loadUserRoles = async (userId: string) => {
+    try {
+      if (!userId) {
+        setUserRoles([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role_name, role_id')
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      if (user && user.id === userId) {
+        setUserRoles(data || []);
+      }
+    } catch (error: any) {
+      console.error('Error loading user roles:', error);
+      setUserRoles([]);
     }
   };
 
@@ -263,7 +288,9 @@ const Profile = () => {
         description: language === "en" ? "Character removed" : "Персонаж удалён",
       });
 
-      loadEveCharacters();
+      if (user?.id) {
+        loadEveCharacters(user.id);
+      }
     } catch (error: any) {
       toast({
         title: language === "en" ? "Error" : "Ошибка",
@@ -475,11 +502,19 @@ const Profile = () => {
                 <div>
                   <Label className="text-muted-foreground flex items-center gap-2">
                     <Shield className="h-4 w-4" />
-                    {language === "en" ? "Status" : "Статус"}
+                    {language === "en" ? "Roles" : "Роли"}
                   </Label>
-                  <p className="text-lg font-medium">
-                    {language === "en" ? "Member" : "Участник"}
-                  </p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {userRoles.length > 0 ? (
+                      userRoles.map((role) => (
+                        <Badge key={role.role_id} variant="secondary">
+                          {role.role_name}
+                        </Badge>
+                      ))
+                    ) : (
+                      <Badge variant="outline">user</Badge>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -920,9 +955,6 @@ const Profile = () => {
               )}
             </CardContent>
             </Card>
-
-            {/* User Roles & Permissions */}
-            {user && <UserRolesCard userId={user.id} />}
 
             {/* Save Button */}
             <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">

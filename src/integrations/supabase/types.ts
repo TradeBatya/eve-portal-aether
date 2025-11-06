@@ -13,88 +13,49 @@ export type Database = {
     PostgrestVersion: "13.0.5"
   }
   public: {
-      Tables: {
-        allowed_corporations: {
-          Row: {
-            alliance_id: number | null
-            alliance_name: string | null
-            corporation_id: number
-            corporation_name: string
-            created_at: string | null
-            id: string
-            is_whitelisted: boolean | null
-            requires_approval: boolean | null
-          }
-          Insert: {
-            alliance_id?: number | null
-            alliance_name?: string | null
-            corporation_id: number
-            corporation_name: string
-            created_at?: string | null
-            id?: string
-            is_whitelisted?: boolean | null
-            requires_approval?: boolean | null
-          }
-          Update: {
-            alliance_id?: number | null
-            alliance_name?: string | null
-            corporation_id?: number
-            corporation_name?: string
-            created_at?: string | null
-            id?: string
-            is_whitelisted?: boolean | null
-            requires_approval?: boolean | null
-          }
-          Relationships: []
+    Tables: {
+      corporation_role_mappings: {
+        Row: {
+          auto_assign: boolean | null
+          corporation_id: number
+          created_at: string | null
+          eve_role_name: string
+          id: string
+          permissions: Json | null
+          system_role_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          auto_assign?: boolean | null
+          corporation_id: number
+          created_at?: string | null
+          eve_role_name: string
+          id?: string
+          permissions?: Json | null
+          system_role_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          auto_assign?: boolean | null
+          corporation_id?: number
+          created_at?: string | null
+          eve_role_name?: string
+          id?: string
+          permissions?: Json | null
+          system_role_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corporation_role_mappings_system_role_name_fkey"
+            columns: ["system_role_name"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["name"]
           },
-          corporation_role_mappings: {
-          Row: {
-            auto_assign: boolean | null
-            corporation_id: number
-            created_at: string | null
-            discord_role_id: string | null
-            eve_role_name: string
-            id: string
-            permissions: Json
-            system_role: string
-            system_role_id: string | null
-            updated_at: string | null
-          }
-          Insert: {
-            auto_assign?: boolean | null
-            corporation_id: number
-            created_at?: string | null
-            discord_role_id?: string | null
-            eve_role_name: string
-            id?: string
-            permissions?: Json
-            system_role: string
-            system_role_id?: string | null
-            updated_at?: string | null
-          }
-          Update: {
-            auto_assign?: boolean | null
-            corporation_id?: number
-            created_at?: string | null
-            discord_role_id?: string | null
-            eve_role_name?: string
-            id?: string
-            permissions?: Json
-            system_role?: string
-            system_role_id?: string | null
-            updated_at?: string | null
-          }
-          Relationships: [
-            {
-              foreignKeyName: "corporation_role_mappings_system_role_id_fkey"
-              columns: ["system_role_id"]
-              isOneToOne: false
-              referencedRelation: "roles"
-              referencedColumns: ["id"]
-            },
-          ]
-          },
-        eve_characters: {
+        ]
+      }
+      eve_characters: {
         Row: {
           access_token: string
           character_id: number
@@ -141,8 +102,8 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-          },
-        fleet_operations: {
+      }
+      fleet_operations: {
         Row: {
           created_at: string
           created_by: string | null
@@ -201,8 +162,8 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-          },
-        intel_reports: {
+      }
+      intel_reports: {
         Row: {
           activity_type: string
           created_at: string
@@ -252,8 +213,8 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-          },
-        news: {
+      }
+      news: {
         Row: {
           category_en: string
           category_ru: string
@@ -294,8 +255,8 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-          },
-        operation_signups: {
+      }
+      operation_signups: {
         Row: {
           created_at: string
           id: string
@@ -332,8 +293,8 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-          },
-        ping_notifications: {
+      }
+      ping_notifications: {
         Row: {
           created_at: string
           created_by: string | null
@@ -365,8 +326,8 @@ export type Database = {
           title?: string
         }
         Relationships: []
-          },
-        profiles: {
+      }
+      profiles: {
         Row: {
           alliance_auth_id: string | null
           alliance_auth_username: string | null
@@ -419,8 +380,8 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-          },
-        role_assignment_logs: {
+      }
+      role_assignment_logs: {
         Row: {
           action: string
           created_at: string | null
@@ -452,8 +413,8 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-          },
-        roles: {
+      }
+      roles: {
         Row: {
           created_at: string | null
           description: string | null
@@ -488,111 +449,82 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          role_id: string | null
+          role_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          role_id?: string | null
+          role_name?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          role_id?: string | null
+          role_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
           },
-          user_verification_status: {
-          Row: {
-            created_at: string | null
-            id: string
-            rejection_reason: string | null
-            status: string
-            updated_at: string | null
-            user_id: string
-            verified_at: string | null
-            verified_by: string | null
-          }
-          Insert: {
-            created_at?: string | null
-            id?: string
-            rejection_reason?: string | null
-            status?: string
-            updated_at?: string | null
-            user_id: string
-            verified_at?: string | null
-            verified_by?: string | null
-          }
-          Update: {
-            created_at?: string | null
-            id?: string
-            rejection_reason?: string | null
-            status?: string
-            updated_at?: string | null
-            user_id?: string
-            verified_at?: string | null
-            verified_by?: string | null
-          }
-          Relationships: []
-          },
-          user_roles: {
-          Row: {
-            created_at: string
-            expires_at: string | null
-            granted_at: string | null
-            granted_by: string | null
-            id: string
-            role_id: string
-            role_name: string
-            user_id: string
-          }
-          Insert: {
-            created_at?: string
-            expires_at?: string | null
-            granted_at?: string | null
-            granted_by?: string | null
-            id?: string
-            role_id: string
-            role_name: string
-            user_id: string
-          }
-          Update: {
-            created_at?: string
-            expires_at?: string | null
-            granted_at?: string | null
-            granted_by?: string | null
-            id?: string
-            role_id?: string
-            role_name?: string
-            user_id?: string
-            }
-            Relationships: [
-            {
-              foreignKeyName: "user_roles_role_id_fkey"
-              columns: ["role_id"]
-              isOneToOne: false
-              referencedRelation: "roles"
-              referencedColumns: ["id"]
-            },
-          ]
-          }
-      },
-      Views: {
+        ]
+      }
+    }
+    Views: {
       [_ in never]: never
-      },
-      Functions: {
-        get_user_permissions: { Args: { user_uuid: string }; Returns: Json }
-        has_permission: {
-          Args: { permission_name: string; user_uuid: string }
-          Returns: boolean
+    }
+    Functions: {
+      get_user_permissions: { Args: { user_uuid: string }; Returns: Json }
+      has_permission: {
+        Args: { permission_name: string; user_uuid: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
-        has_role: {
-          Args: { role_name: string; user_uuid: string }
-          Returns: boolean
-        }
-        has_role_level: {
-          Args: { min_level: number; user_uuid: string }
-          Returns: boolean
-        }
-      },
-      Enums: {
-        operation_status: "scheduled" | "ongoing" | "completed" | "cancelled"
-        operation_type:
-          | "pvp"
-          | "pve"
-          | "mining"
-          | "training"
-          | "logistics"
-          | "defense"
-      },
-      CompositeTypes: {
+        Returns: boolean
+      }
+      has_role_level: {
+        Args: { min_level: number; user_uuid: string }
+        Returns: boolean
+      }
+    }
+    Enums: {
+      app_role: "admin" | "user"
+      operation_status: "scheduled" | "ongoing" | "completed" | "cancelled"
+      operation_type:
+        | "pvp"
+        | "pve"
+        | "mining"
+        | "training"
+        | "logistics"
+        | "defense"
+    }
+    CompositeTypes: {
       [_ in never]: never
     }
   }
@@ -718,6 +650,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       operation_status: ["scheduled", "ongoing", "completed", "cancelled"],
       operation_type: [
         "pvp",
