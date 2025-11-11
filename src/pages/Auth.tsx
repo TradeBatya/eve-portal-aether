@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Rocket, ShieldCheck, Users, Target, Radio, Zap, Database, Lock } from 'lucide-react';
 
 export default function Auth() {
@@ -157,6 +158,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4 py-12">
       <AnimatedBackground />
+      <LanguageSwitcher />
       
       <div className="w-full max-w-6xl z-10 space-y-8">
         {/* Hero Section */}

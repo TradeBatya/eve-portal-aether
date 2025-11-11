@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 const DiscordCallback = () => {
   const navigate = useNavigate();
@@ -111,6 +112,7 @@ const DiscordCallback = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
+      <LanguageSwitcher />
       <div className="text-center">
         <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
         <p className="text-muted-foreground">{status}</p>

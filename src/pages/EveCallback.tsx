@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 const EveCallback = () => {
   const navigate = useNavigate();
@@ -99,6 +100,7 @@ const EveCallback = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
+      <LanguageSwitcher />
       <div className="text-center space-y-4">
         <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
         <p className="text-lg text-foreground">{status}</p>
