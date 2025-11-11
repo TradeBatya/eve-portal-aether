@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
-import { Rocket, MessageCircle, ShieldCheck } from 'lucide-react';
+import { Rocket, ShieldCheck } from 'lucide-react';
 
 export default function Auth() {
   const { user } = useAuth();
@@ -60,7 +60,7 @@ export default function Auth() {
   }, [user, navigate]);
 
   const handleEveLogin = () => {
-    const clientId = '33d3a8bd979d4e72a41e2d5d6fa08e68';
+    const clientId = '9b9086e27f4940d8a8c64c2881944375';
     const redirectUri = `${window.location.origin}/auth/eve/callback`;
     
     // Full scope list for EVE SSO
@@ -81,7 +81,6 @@ export default function Auth() {
       'esi-clones.read_clones.v1',
       'esi-characters.read_contacts.v1',
       'esi-universe.read_structures.v1',
-      'esi-bookmarks.read_character_bookmarks.v1',
       'esi-killmails.read_killmails.v1',
       'esi-corporations.read_corporation_membership.v1',
       'esi-assets.read_assets.v1',
@@ -95,12 +94,45 @@ export default function Auth() {
       'esi-fittings.write_fittings.v1',
       'esi-markets.structure_markets.v1',
       'esi-corporations.read_structures.v1',
-      'esi-characterstats.read.v1',
+      'esi-characters.read_loyalty.v1',
+      'esi-characters.read_chat_channels.v1',
+      'esi-characters.read_medals.v1',
+      'esi-characters.read_standings.v1',
+      'esi-characters.read_agents_research.v1',
       'esi-industry.read_character_jobs.v1',
-      'esi-industry.read_corporation_jobs.v1',
+      'esi-markets.read_character_orders.v1',
+      'esi-characters.read_blueprints.v1',
+      'esi-characters.read_corporation_roles.v1',
+      'esi-location.read_online.v1',
       'esi-contracts.read_character_contracts.v1',
-      'esi-contracts.read_corporation_contracts.v1',
       'esi-clones.read_implants.v1',
+      'esi-characters.read_fatigue.v1',
+      'esi-killmails.read_corporation_killmails.v1',
+      'esi-corporations.track_members.v1',
+      'esi-wallet.read_corporation_wallets.v1',
+      'esi-characters.read_notifications.v1',
+      'esi-corporations.read_divisions.v1',
+      'esi-corporations.read_contacts.v1',
+      'esi-assets.read_corporation_assets.v1',
+      'esi-corporations.read_titles.v1',
+      'esi-corporations.read_blueprints.v1',
+      'esi-contracts.read_corporation_contracts.v1',
+      'esi-corporations.read_standings.v1',
+      'esi-corporations.read_starbases.v1',
+      'esi-industry.read_corporation_jobs.v1',
+      'esi-markets.read_corporation_orders.v1',
+      'esi-corporations.read_container_logs.v1',
+      'esi-industry.read_character_mining.v1',
+      'esi-industry.read_corporation_mining.v1',
+      'esi-planets.read_customs_offices.v1',
+      'esi-corporations.read_facilities.v1',
+      'esi-corporations.read_medals.v1',
+      'esi-characters.read_titles.v1',
+      'esi-alliances.read_contacts.v1',
+      'esi-characters.read_fw_stats.v1',
+      'esi-corporations.read_fw_stats.v1',
+      'esi-characterstats.read.v1',
+      'esi-corporations.read_projects.v1',
     ].join(' ');
 
     const state = Math.random().toString(36).substring(7);
@@ -111,18 +143,6 @@ export default function Auth() {
     window.location.href = authUrl;
   };
 
-  const handleDiscordLogin = () => {
-    const clientId = '1321556883606241422';
-    const redirectUri = `${window.location.origin}/auth/discord/callback`;
-    
-    const scopes = ['identify', 'email', 'guilds', 'guilds.join'].join(' ');
-    const state = Math.random().toString(36).substring(7);
-    sessionStorage.setItem('discord_oauth_state', state);
-
-    const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}`;
-    
-    window.location.href = authUrl;
-  };
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
@@ -158,23 +178,6 @@ export default function Auth() {
                   <div className="text-left">
                     <div className="text-lg font-bold">{t.eveButton}</div>
                     <div className="text-sm opacity-90">{t.eveDesc}</div>
-                  </div>
-                </div>
-              </div>
-            </Button>
-
-            {/* Discord Button */}
-            <Button
-              onClick={handleDiscordLogin}
-              size="lg"
-              className="w-full h-auto py-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all"
-            >
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3">
-                  <MessageCircle className="h-8 w-8" />
-                  <div className="text-left">
-                    <div className="text-lg font-bold">{t.discordButton}</div>
-                    <div className="text-sm opacity-90">{t.discordDesc}</div>
                   </div>
                 </div>
               </div>
