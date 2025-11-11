@@ -59,25 +59,32 @@ const EveCallback = () => {
           const refreshToken = url.searchParams.get('refresh_token');
           
           if (accessToken && refreshToken) {
-            const { error: sessionError } = await supabase.auth.setSession({
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken,
             });
 
             if (sessionError) throw sessionError;
+
+            // Дожидаемся подтверждения сессии
+            if (sessionData?.session) {
+              setStatus('Авторизация успешна! Перенаправление в профиль...');
+              
+              toast({
+                title: "Успешная авторизация",
+                description: `Добро пожаловать, ${data.character_name}!`,
+              });
+
+              // Даем время AuthContext обновиться
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+              navigate('/profile');
+              return;
+            }
           }
         }
 
-        setStatus('Авторизация успешна! Перенаправление в профиль...');
-        
-        toast({
-          title: "Успешная авторизация",
-          description: `Добро пожаловать, ${data.character_name}!`,
-        });
-
-        setTimeout(() => {
-          navigate('/profile');
-        }, 1000);
+        throw new Error('Не удалось создать сессию');
 
       } catch (error: any) {
         console.error('EVE Auth error:', error);
