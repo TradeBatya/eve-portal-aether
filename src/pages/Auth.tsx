@@ -142,7 +142,6 @@ export default function Auth() {
       'esi-alliances.read_contacts.v1',
       'esi-characters.read_fw_stats.v1',
       'esi-corporations.read_fw_stats.v1',
-      'esi-characterstats.read.v1',
       'esi-corporations.read_projects.v1',
     ].join(' ');
 
