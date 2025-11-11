@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { z } from 'zod';
 import { RoleManagement } from '@/components/admin/RoleManagement';
+import { PingManagement } from '@/components/admin/PingManagement';
 
 const newsSchema = z.object({
   title_en: z.string().trim().min(1, "English title is required").max(200, "Title must be less than 200 characters"),
@@ -52,6 +53,7 @@ export default function Admin() {
       title: 'Administration Panel',
       newsManagement: 'News',
       roleManagement: 'Roles',
+      pingManagement: 'Pings',
       addNews: 'Add News',
       edit: 'Edit',
       delete: 'Delete',
@@ -73,6 +75,7 @@ export default function Admin() {
       title: 'Панель администрирования',
       newsManagement: 'Новости',
       roleManagement: 'Роли',
+      pingManagement: 'Пинги',
       addNews: 'Добавить новость',
       edit: 'Редактировать',
       delete: 'Удалить',
@@ -245,9 +248,10 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="news" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="news">{t.newsManagement}</TabsTrigger>
             <TabsTrigger value="roles">{t.roleManagement}</TabsTrigger>
+            <TabsTrigger value="pings">{t.pingManagement}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="news" className="space-y-4">
@@ -291,6 +295,10 @@ export default function Admin() {
 
           <TabsContent value="roles">
             <RoleManagement />
+          </TabsContent>
+
+          <TabsContent value="pings">
+            <PingManagement />
           </TabsContent>
         </Tabs>
 

@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Menu, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { WelcomeWidget } from "@/components/dashboard/WelcomeWidget";
 import { OperationsWidget } from "@/components/dashboard/OperationsWidget";
 import { IntelWidget } from "@/components/dashboard/IntelWidget";
 import { QuickActionsWidget } from "@/components/dashboard/QuickActionsWidget";
 import { StatsWidget } from "@/components/dashboard/StatsWidget";
 import { PingsWidget } from "@/components/dashboard/PingsWidget";
+import { DashboardWelcome } from "@/components/dashboard/DashboardWelcome";
+import { RecentActivity } from "@/components/dashboard/RecentActivity";
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -61,34 +62,39 @@ const Dashboard = () => {
 
         {/* Dashboard Grid */}
         <div className="grid gap-6 lg:grid-cols-3 md:grid-cols-2">
-          {/* Welcome Widget - Full width on top */}
-          <div className="lg:col-span-3">
-            <WelcomeWidget />
-          </div>
-
-          {/* Operations Widget - Left column */}
+          {/* Welcome Widget - Spans 2 columns */}
           <div className="lg:col-span-2">
-            <OperationsWidget />
+            <DashboardWelcome />
           </div>
 
-          {/* Quick Actions Widget - Right column */}
+          {/* Quick Actions Widget */}
           <div className="lg:col-span-1">
             <QuickActionsWidget />
           </div>
 
-          {/* Intel Widget - Left column */}
-          <div className="lg:col-span-2">
-            <IntelWidget />
-          </div>
-
-          {/* Stats Widget - Right top */}
-          <div className="lg:col-span-1">
+          {/* Stats Widget - Full width */}
+          <div className="lg:col-span-3">
             <StatsWidget />
           </div>
 
-          {/* Pings Widget - Full width bottom */}
-          <div className="lg:col-span-3">
+          {/* Operations Widget */}
+          <div className="lg:col-span-2">
+            <OperationsWidget />
+          </div>
+
+          {/* Recent Activity */}
+          <div className="lg:col-span-1">
+            <RecentActivity />
+          </div>
+
+          {/* Pings Widget */}
+          <div className="lg:col-span-2">
             <PingsWidget />
+          </div>
+
+          {/* Intel Widget */}
+          <div className="lg:col-span-1">
+            <IntelWidget />
           </div>
         </div>
       </div>
