@@ -69,3 +69,51 @@ export interface News {
   image_url: string;
   date: string;
 }
+
+// Corporation types
+export interface Corporation {
+  id: number;
+  name: string;
+  ticker: string;
+  alliance_id?: number;
+  member_count?: number;
+  ceo_id?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// Alliance types
+export interface Alliance {
+  id: number;
+  name: string;
+  ticker: string;
+  executor_corp_id?: number;
+  member_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// Plugin types
+export interface Plugin {
+  id: string;
+  plugin_id: string;
+  name: string;
+  version: string;
+  description?: string;
+  author?: string;
+  enabled: boolean;
+  is_system: boolean;
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+// User Plugin types
+export interface UserPlugin {
+  id: string;
+  user_id: string;
+  plugin_id: string;
+  enabled: boolean;
+  settings: Record<string, any>;
+  installed_at: string;
+}

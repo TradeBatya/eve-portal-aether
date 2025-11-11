@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      alliances: {
+        Row: {
+          created_at: string
+          executor_corp_id: number | null
+          id: number
+          member_count: number | null
+          name: string
+          ticker: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          executor_corp_id?: number | null
+          id: number
+          member_count?: number | null
+          name: string
+          ticker: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          executor_corp_id?: number | null
+          id?: number
+          member_count?: number | null
+          name?: string
+          ticker?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_alliances_executor"
+            columns: ["executor_corp_id"]
+            isOneToOne: false
+            referencedRelation: "corporations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       corporation_role_mappings: {
         Row: {
           auto_assign: boolean | null
@@ -52,6 +90,47 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "roles"
             referencedColumns: ["name"]
+          },
+        ]
+      }
+      corporations: {
+        Row: {
+          alliance_id: number | null
+          ceo_id: number | null
+          created_at: string
+          id: number
+          member_count: number | null
+          name: string
+          ticker: string
+          updated_at: string
+        }
+        Insert: {
+          alliance_id?: number | null
+          ceo_id?: number | null
+          created_at?: string
+          id: number
+          member_count?: number | null
+          name: string
+          ticker: string
+          updated_at?: string
+        }
+        Update: {
+          alliance_id?: number | null
+          ceo_id?: number | null
+          created_at?: string
+          id?: number
+          member_count?: number | null
+          name?: string
+          ticker?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_corporations_alliance"
+            columns: ["alliance_id"]
+            isOneToOne: false
+            referencedRelation: "alliances"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -327,6 +406,48 @@ export type Database = {
         }
         Relationships: []
       }
+      plugins: {
+        Row: {
+          author: string | null
+          created_at: string
+          description: string | null
+          enabled: boolean | null
+          id: string
+          is_system: boolean | null
+          metadata: Json | null
+          name: string
+          plugin_id: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          author?: string | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean | null
+          id?: string
+          is_system?: boolean | null
+          metadata?: Json | null
+          name: string
+          plugin_id: string
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          author?: string | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean | null
+          id?: string
+          is_system?: boolean | null
+          metadata?: Json | null
+          name?: string
+          plugin_id?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           alliance_auth_id: string | null
@@ -449,6 +570,41 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      user_plugins: {
+        Row: {
+          enabled: boolean | null
+          id: string
+          installed_at: string
+          plugin_id: string
+          settings: Json | null
+          user_id: string
+        }
+        Insert: {
+          enabled?: boolean | null
+          id?: string
+          installed_at?: string
+          plugin_id: string
+          settings?: Json | null
+          user_id: string
+        }
+        Update: {
+          enabled?: boolean | null
+          id?: string
+          installed_at?: string
+          plugin_id?: string
+          settings?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_plugins_plugin_id_fkey"
+            columns: ["plugin_id"]
+            isOneToOne: false
+            referencedRelation: "plugins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
