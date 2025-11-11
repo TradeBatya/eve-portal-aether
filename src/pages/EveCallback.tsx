@@ -51,38 +51,24 @@ const EveCallback = () => {
 
         setStatus('Создание сессии...');
 
-        // Используем сгенерированную ссылку для авторизации
-        if (!data.session_url) {
-          throw new Error('Session URL не получен от сервера');
+        if (!data.email || !data.password) {
+          throw new Error('Данные для входа не получены');
         }
 
-        console.log('Session URL received:', data.session_url.substring(0, 50) + '...');
+        console.log('Logging in with credentials...');
 
-        // Извлекаем токены из URL
-        const url = new URL(data.session_url);
-        const accessToken = url.searchParams.get('access_token');
-        const refreshToken = url.searchParams.get('refresh_token');
-        
-        console.log('Tokens extracted:', { 
-          hasAccessToken: !!accessToken, 
-          hasRefreshToken: !!refreshToken 
+        // Sign in using the temporary credentials
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
         });
 
-        if (!accessToken || !refreshToken) {
-          throw new Error('Токены не найдены в session URL');
+        if (signInError) {
+          console.error('Sign in error:', signInError);
+          throw signInError;
         }
 
-        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          throw sessionError;
-        }
-
-        console.log('Session set successfully:', !!sessionData?.session);
+        console.log('Signed in successfully');
 
         setStatus('Авторизация успешна! Перенаправление в профиль...');
         

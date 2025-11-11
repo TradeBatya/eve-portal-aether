@@ -168,6 +168,7 @@ serve(async (req) => {
 
     // If no userId, create new auth user
     const email = `${characterData.CharacterID}@eve.local`;
+    const tempPassword = crypto.randomUUID(); // Temporary password
     let authUserId: string;
 
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
@@ -176,8 +177,9 @@ serve(async (req) => {
     if (existingUser) {
       authUserId = existingUser.id;
       
-      // Update user metadata
+      // Update user metadata and password
       await supabase.auth.admin.updateUserById(authUserId, {
+        password: tempPassword,
         user_metadata: {
           character_id: characterData.CharacterID,
           character_name: characterData.CharacterName,
@@ -187,6 +189,7 @@ serve(async (req) => {
     } else {
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: email,
+        password: tempPassword,
         email_confirm: true,
         user_metadata: {
           character_id: characterData.CharacterID,
@@ -234,18 +237,13 @@ serve(async (req) => {
         });
     }
 
-    // Generate session
-    const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email: email,
-    });
-
-    if (sessionError) throw sessionError;
+    console.log('Session created successfully for user:', authUserId);
 
     return new Response(JSON.stringify({
       character_name: characterData.CharacterName,
       character_id: characterData.CharacterID,
-      session_url: sessionData.properties.action_link,
+      email: email,
+      password: tempPassword,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
