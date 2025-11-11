@@ -13,6 +13,8 @@ import Profile from "./pages/Profile";
 import Dashboard from "./pages/Dashboard";
 import Operations from "./pages/Operations";
 import Intel from "./pages/Intel";
+import Plugins from "./pages/Plugins";
+import Calendar from "./pages/Calendar";
 import EveCallback from "./pages/EveCallback";
 import DiscordCallback from "./pages/DiscordCallback";
 import NotFound from "./pages/NotFound";
@@ -38,6 +40,8 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/operations" element={<Operations />} />
                 <Route path="/intel" element={<Intel />} />
+                <Route path="/plugins" element={<Plugins />} />
+                <Route path="/calendar" element={<Calendar />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
