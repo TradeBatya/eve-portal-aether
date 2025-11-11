@@ -455,7 +455,9 @@ export type Database = {
         Row: {
           alliance_auth_id: string | null
           alliance_auth_username: string | null
+          avatar_url: string | null
           created_at: string
+          dashboard_layout: Json | null
           discord_access_token: string | null
           discord_avatar: string | null
           discord_connected_at: string | null
@@ -466,13 +468,17 @@ export type Database = {
           discord_username: string | null
           display_name: string | null
           id: string
+          last_activity: string | null
+          notification_settings: Json | null
           timezone: string | null
           updated_at: string
         }
         Insert: {
           alliance_auth_id?: string | null
           alliance_auth_username?: string | null
+          avatar_url?: string | null
           created_at?: string
+          dashboard_layout?: Json | null
           discord_access_token?: string | null
           discord_avatar?: string | null
           discord_connected_at?: string | null
@@ -483,13 +489,17 @@ export type Database = {
           discord_username?: string | null
           display_name?: string | null
           id: string
+          last_activity?: string | null
+          notification_settings?: Json | null
           timezone?: string | null
           updated_at?: string
         }
         Update: {
           alliance_auth_id?: string | null
           alliance_auth_username?: string | null
+          avatar_url?: string | null
           created_at?: string
+          dashboard_layout?: Json | null
           discord_access_token?: string | null
           discord_avatar?: string | null
           discord_connected_at?: string | null
@@ -500,6 +510,8 @@ export type Database = {
           discord_username?: string | null
           display_name?: string | null
           id?: string
+          last_activity?: string | null
+          notification_settings?: Json | null
           timezone?: string | null
           updated_at?: string
         }
