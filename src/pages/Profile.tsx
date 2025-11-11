@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CharacterCard } from "@/components/profile/CharacterCard";
 import { ProfileSettings } from "@/components/profile/ProfileSettings";
 import { ActivityStats } from "@/components/profile/ActivityStats";
+import { AchievementsSection } from "@/components/profile/AchievementsSection";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
@@ -375,11 +376,14 @@ const Profile = () => {
             </Card>
 
             {profile && (
-              <ActivityStats
-                joinDate={profile.created_at}
-                lastActivity={profile.last_activity || profile.created_at}
-                operationsCount={0}
-              />
+              <>
+                <ActivityStats
+                  joinDate={profile.created_at}
+                  lastActivity={profile.last_activity || profile.created_at}
+                  operationsCount={0}
+                />
+                <AchievementsSection />
+              </>
             )}
           </div>
 

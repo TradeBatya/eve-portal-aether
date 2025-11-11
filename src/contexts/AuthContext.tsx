@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (session?.user) {
         await checkAdminRole(session.user.id);
+        await updateLastActivity(session.user.id);
       }
       setLoading(false);
     };
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (session?.user) {
             await checkAdminRole(session.user.id);
+            await updateLastActivity(session.user.id);
           } else {
             setIsAdmin(false);
           }
@@ -67,6 +69,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setIsAdmin(Boolean(data));
+  };
+
+  const updateLastActivity = async (userId: string) => {
+    try {
+      await supabase
+        .from('profiles')
+        .update({ last_activity: new Date().toISOString() })
+        .eq('id', userId);
+    } catch (error) {
+      console.error('Failed to update last activity:', error);
+    }
   };
 
   const signIn = async (email: string, password: string) => {

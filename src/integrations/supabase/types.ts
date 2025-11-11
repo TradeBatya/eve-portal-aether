@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          category: string
+          created_at: string | null
+          description_en: string
+          description_ru: string
+          icon: string
+          id: string
+          is_active: boolean | null
+          key: string
+          name_en: string
+          name_ru: string
+          points: number
+          requirement_count: number
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description_en: string
+          description_ru: string
+          icon: string
+          id?: string
+          is_active?: boolean | null
+          key: string
+          name_en: string
+          name_ru: string
+          points?: number
+          requirement_count?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description_en?: string
+          description_ru?: string
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          key?: string
+          name_en?: string
+          name_ru?: string
+          points?: number
+          requirement_count?: number
+        }
+        Relationships: []
+      }
       alliances: {
         Row: {
           created_at: string
@@ -613,6 +658,41 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          created_at: string | null
+          id: string
+          progress: number | null
+          unlocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          created_at?: string | null
+          id?: string
+          progress?: number | null
+          unlocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          created_at?: string | null
+          id?: string
+          progress?: number | null
+          unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_plugins: {
         Row: {
           enabled: boolean | null
@@ -709,6 +789,14 @@ export type Database = {
       has_role_level: {
         Args: { min_level: number; user_uuid: string }
         Returns: boolean
+      }
+      update_achievement_progress: {
+        Args: {
+          p_achievement_key: string
+          p_increment?: number
+          p_user_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

@@ -89,6 +89,19 @@ export const CreateIntelDialog = ({ onReportCreated }: CreateIntelDialogProps) =
 
       if (error) throw error;
 
+      // Track achievement progress
+      await supabase.rpc('update_achievement_progress', {
+        p_user_id: user.id,
+        p_achievement_key: 'first_intel',
+        p_increment: 1
+      });
+      
+      await supabase.rpc('update_achievement_progress', {
+        p_user_id: user.id,
+        p_achievement_key: 'intel_specialist',
+        p_increment: 1
+      });
+
       toast.success(language === "en" ? "Intel report submitted" : "Разведданные отправлены");
       setOpen(false);
       setFormData({

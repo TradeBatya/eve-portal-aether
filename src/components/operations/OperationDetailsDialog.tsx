@@ -144,6 +144,25 @@ export function OperationDetailsDialog({ open, onOpenChange, operation, onUpdate
           variant: 'destructive'
         });
       } else {
+        // Track achievement progress
+        await supabase.rpc('update_achievement_progress', {
+          p_user_id: user.id,
+          p_achievement_key: 'first_operation',
+          p_increment: 1
+        });
+        
+        await supabase.rpc('update_achievement_progress', {
+          p_user_id: user.id,
+          p_achievement_key: 'operation_veteran',
+          p_increment: 1
+        });
+        
+        await supabase.rpc('update_achievement_progress', {
+          p_user_id: user.id,
+          p_achievement_key: 'operation_master',
+          p_increment: 1
+        });
+
         toast({
           title: language === 'en' ? 'Signed up!' : 'Записаны!',
           description: language === 'en' ? 'You are now registered for this operation' : 'Вы зарегистрированы на операцию'
