@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
+import Dashboard from "./pages/Dashboard";
 import Operations from "./pages/Operations";
 import Intel from "./pages/Intel";
 import EveCallback from "./pages/EveCallback";
@@ -34,6 +35,7 @@ const App = () => (
                 <Route path="/auth/discord/callback" element={<DiscordCallback />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/operations" element={<Operations />} />
                 <Route path="/intel" element={<Intel />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
