@@ -66,6 +66,7 @@ export function PingManagement() {
       delete: 'Delete',
       ago: 'ago',
       expires: 'Expires',
+      indefinite: 'Indefinite',
     },
     ru: {
       title: 'Управление пингами',
@@ -88,6 +89,7 @@ export function PingManagement() {
       delete: 'Удалить',
       ago: 'назад',
       expires: 'Истекает',
+      indefinite: 'Бессрочно',
     },
   }[language];
 
@@ -163,6 +165,40 @@ export function PingManagement() {
         });
 
       if (error) throw error;
+
+      // Send Discord notification
+      const getPriorityColor = (priority: string) => {
+        const colors: Record<string, number> = {
+          low: 0x808080,
+          normal: 0x5865F2,
+          high: 0xFFD700,
+          urgent: 0xFF0000,
+        };
+        return colors[priority] || 0x5865F2;
+      };
+
+      const titlePrefix = validationResult.data.priority === 'urgent' ? '📣 @everyone ' : '📣 ';
+
+      await supabase.functions.invoke('send-discord-notification', {
+        body: {
+          payload: {
+            type: 'pings',
+            title: titlePrefix + validationResult.data.title,
+            description: validationResult.data.message,
+            color: getPriorityColor(validationResult.data.priority),
+            fields: [
+              { name: t.priority, value: validationResult.data.priority.toUpperCase(), inline: true },
+              { 
+                name: t.expiresIn, 
+                value: expiresAt 
+                  ? new Date(expiresAt).toLocaleString() 
+                  : t.indefinite, 
+                inline: true 
+              },
+            ],
+          }
+        }
+      }).catch(err => console.error('Failed to send Discord notification:', err));
 
       toast({
         title: t.success,

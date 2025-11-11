@@ -89,6 +89,34 @@ export const CreateIntelDialog = ({ onReportCreated }: CreateIntelDialogProps) =
 
       if (error) throw error;
 
+      // Send Discord notification
+      const getThreatColor = (level: string) => {
+        const colors: Record<string, number> = {
+          low: 0x00FF00,
+          medium: 0xFFD700,
+          high: 0xFF6B00,
+          critical: 0xFF0000,
+        };
+        return colors[level] || 0x5865F2;
+      };
+
+      await supabase.functions.invoke('send-discord-notification', {
+        body: {
+          payload: {
+            type: 'intel',
+            title: `⚠️ Intel: ${validatedData.system_name}`,
+            description: validatedData.description || (language === "en" ? "Hostile activity detected" : "Обнаружена враждебная активность"),
+            color: getThreatColor(validatedData.threat_level),
+            fields: [
+              { name: language === "en" ? 'System' : 'Система', value: validatedData.system_name, inline: true },
+              { name: language === "en" ? 'Threat' : 'Угроза', value: validatedData.threat_level.toUpperCase(), inline: true },
+              { name: language === "en" ? 'Activity' : 'Активность', value: validatedData.activity_type, inline: true },
+              { name: language === "en" ? 'Hostiles' : 'Враги', value: String(validatedData.hostiles_count), inline: true },
+            ],
+          }
+        }
+      }).catch(err => console.error('Failed to send Discord notification:', err));
+
       // Track achievement progress
       await supabase.rpc('update_achievement_progress', {
         p_user_id: user.id,

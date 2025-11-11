@@ -11,6 +11,8 @@ import { CharacterCard } from "@/components/profile/CharacterCard";
 import { ProfileSettings } from "@/components/profile/ProfileSettings";
 import { ActivityStats } from "@/components/profile/ActivityStats";
 import { AchievementsSection } from "@/components/profile/AchievementsSection";
+import { AccountLinking } from "@/components/auth/AccountLinking";
+import { DiscordIntegration } from "@/components/profile/DiscordIntegration";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
@@ -37,6 +39,10 @@ interface ProfileData {
   last_activity: string | null;
   dashboard_layout: any;
   avatar_url: string | null;
+  discord_user_id: string | null;
+  discord_username: string | null;
+  discord_avatar: string | null;
+  discord_connected_at: string | null;
 }
 
 const Profile = () => {
@@ -187,6 +193,41 @@ const Profile = () => {
       toast({
         title: language === "en" ? "Success" : "Успешно",
         description: language === "en" ? "Settings saved" : "Настройки сохранены",
+      });
+      fetchProfile();
+    }
+  };
+
+  const handleDiscordDisconnect = async () => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        discord_user_id: null,
+        discord_username: null,
+        discord_avatar: null,
+        discord_email: null,
+        discord_access_token: null,
+        discord_refresh_token: null,
+        discord_connected_at: null,
+      })
+      .eq("id", user.id);
+
+    if (error) {
+      toast({
+        title: language === "en" ? "Error" : "Ошибка",
+        description: language === "en" 
+          ? "Failed to disconnect Discord" 
+          : "Не удалось отключить Discord",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: language === "en" ? "Success" : "Успешно",
+        description: language === "en" 
+          ? "Discord disconnected" 
+          : "Discord отключен",
       });
       fetchProfile();
     }
@@ -390,12 +431,31 @@ const Profile = () => {
           {/* Right column - Settings */}
           <div className="space-y-6">
             {profile && (
-              <ProfileSettings
-                displayName={profile.display_name || ""}
-                timezone={profile.timezone || "UTC"}
-                notificationSettings={profile.notification_settings || { email: true, discord: true }}
-                onSave={handleSaveSettings}
-              />
+              <>
+                <ProfileSettings
+                  displayName={profile.display_name || ""}
+                  timezone={profile.timezone || "UTC"}
+                  notificationSettings={profile.notification_settings || { email: true, discord: true }}
+                  onSave={handleSaveSettings}
+                />
+                
+                {profile.discord_user_id && profile.discord_username ? (
+                  <DiscordIntegration
+                    discordUsername={profile.discord_username}
+                    discordAvatar={profile.discord_avatar}
+                    discordUserId={profile.discord_user_id}
+                    connectedAt={profile.discord_connected_at}
+                    onDisconnect={handleDiscordDisconnect}
+                  />
+                ) : (
+                  <AccountLinking
+                    eveCharacters={characters}
+                    discordConnected={false}
+                    onEveConnect={handleAddCharacter}
+                    onDiscordDisconnect={handleDiscordDisconnect}
+                  />
+                )}
+              </>
             )}
           </div>
         </div>

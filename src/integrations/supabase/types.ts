@@ -179,6 +179,39 @@ export type Database = {
           },
         ]
       }
+      discord_webhooks: {
+        Row: {
+          channel_name: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+          webhook_type: string
+          webhook_url: string
+        }
+        Insert: {
+          channel_name: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          webhook_type: string
+          webhook_url: string
+        }
+        Update: {
+          channel_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          webhook_type?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
       eve_characters: {
         Row: {
           access_token: string

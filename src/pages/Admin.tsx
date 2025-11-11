@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { z } from 'zod';
 import { RoleManagement } from '@/components/admin/RoleManagement';
 import { PingManagement } from '@/components/admin/PingManagement';
+import { WebhookManagement } from '@/components/admin/WebhookManagement';
 
 const newsSchema = z.object({
   title_en: z.string().trim().min(1, "English title is required").max(200, "Title must be less than 200 characters"),
@@ -54,6 +55,7 @@ export default function Admin() {
       newsManagement: 'News',
       roleManagement: 'Roles',
       pingManagement: 'Pings',
+      webhookManagement: 'Webhooks',
       addNews: 'Add News',
       edit: 'Edit',
       delete: 'Delete',
@@ -76,6 +78,7 @@ export default function Admin() {
       newsManagement: 'Новости',
       roleManagement: 'Роли',
       pingManagement: 'Пинги',
+      webhookManagement: 'Вебхуки',
       addNews: 'Добавить новость',
       edit: 'Редактировать',
       delete: 'Удалить',
@@ -248,10 +251,11 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="news" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="news">{t.newsManagement}</TabsTrigger>
             <TabsTrigger value="roles">{t.roleManagement}</TabsTrigger>
             <TabsTrigger value="pings">{t.pingManagement}</TabsTrigger>
+            <TabsTrigger value="webhooks">{t.webhookManagement}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="news" className="space-y-4">
@@ -299,6 +303,10 @@ export default function Admin() {
 
           <TabsContent value="pings">
             <PingManagement />
+          </TabsContent>
+
+          <TabsContent value="webhooks">
+            <WebhookManagement />
           </TabsContent>
         </Tabs>
 

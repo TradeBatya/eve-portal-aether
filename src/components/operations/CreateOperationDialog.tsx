@@ -103,6 +103,25 @@ export function CreateOperationDialog({ open, onOpenChange, onSuccess }: CreateO
           variant: 'destructive'
         });
       } else {
+        // Send Discord notification
+        await supabase.functions.invoke('send-discord-notification', {
+          body: {
+            payload: {
+              type: 'operations',
+              title: '🚀 ' + (language === 'en' ? 'New Operation!' : 'Новая операция!'),
+              description: validationResult.data.title,
+              color: 0xFFD700,
+              fields: [
+                { name: language === 'en' ? 'FC' : 'КФ', value: validationResult.data.fc_name, inline: true },
+                { name: language === 'en' ? 'Time' : 'Время', value: new Date(formData.start_time).toLocaleString(), inline: true },
+                { name: language === 'en' ? 'Doctrine' : 'Доктрина', value: validationResult.data.doctrine || (language === 'en' ? 'Free for All' : 'Свободная'), inline: true },
+                { name: language === 'en' ? 'Location' : 'Локация', value: validationResult.data.location || 'TBA', inline: false },
+              ],
+              footer: language === 'en' ? 'Sign up for the operation!' : 'Запишитесь в операцию!',
+            }
+          }
+        }).catch(err => console.error('Failed to send Discord notification:', err));
+
         toast({
           title: language === 'en' ? 'Success' : 'Успешно',
           description: language === 'en' ? 'Operation created successfully' : 'Операция создана'
