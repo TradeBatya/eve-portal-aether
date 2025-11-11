@@ -116,7 +116,7 @@ export const AchievementsSection = () => {
             <div className="grid gap-3">
               {achievements.map((achievement) => {
                 const progress = getAchievementProgress(achievement.id);
-                const isUnlocked = progress?.unlocked_at !== null;
+                const isUnlocked = !!progress?.unlocked_at;
                 const progressValue = progress?.progress || 0;
                 const progressPercent = (progressValue / achievement.requirement_count) * 100;
 
