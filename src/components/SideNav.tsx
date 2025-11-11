@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Home, Newspaper, Users, Info, Menu, LogIn, LogOut, Languages, Shield, User, Rocket, Radio, Ship, Plug, CalendarDays } from "lucide-react";
+import { X, Home, Newspaper, Users, Info, Menu, LogIn, LogOut, Languages, Shield, User, Rocket, Radio, Ship, Plug, CalendarDays, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -121,6 +121,16 @@ export function SideNav({ isOpen, onToggle }: SideNavProps) {
             <CalendarDays className="h-5 w-5" />
             <span className="font-medium">{language === 'en' ? 'Calendar' : 'Календарь'}</span>
           </button>
+          
+          {user && (
+            <button
+              onClick={() => { navigate('/statistics'); onToggle(); }}
+              className="w-full flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-muted text-foreground transition-all duration-200"
+            >
+              <BarChart3 className="h-5 w-5" />
+              <span className="font-medium">{language === 'en' ? 'Statistics' : 'Статистика'}</span>
+            </button>
+          )}
           
           {user && (
             <button
