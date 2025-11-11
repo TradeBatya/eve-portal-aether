@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { translations } from "@/translations";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 interface SideNavProps {
   isOpen: boolean;
@@ -51,7 +52,10 @@ export function SideNav({ isOpen, onToggle }: SideNavProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-bold text-primary">{t.nav.title}</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-primary">{t.nav.title}</h2>
+            {user && <NotificationCenter />}
+          </div>
           <Button
             variant="ghost"
             size="icon"
