@@ -10,6 +10,11 @@ interface CharacterCardProps {
     character_id: number;
     character_name: string;
     corporation_name?: string;
+    alliance_name?: string;
+    wallet_balance?: number;
+    security_status?: number;
+    location_system_name?: string;
+    ship_type_name?: string;
     is_main: boolean;
     created_at: string;
   };
@@ -47,11 +52,39 @@ export const CharacterCard = ({ character, onSetMain, onRefresh, isRefreshing }:
                   {character.corporation_name}
                 </div>
               )}
+              {character.alliance_name && (
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <Users className="w-3 h-3" />
+                  {character.alliance_name}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {(character.wallet_balance !== null || character.location_system_name || character.ship_type_name) && (
+          <div className="space-y-2 pb-3 border-b border-border">
+            {character.wallet_balance !== null && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Баланс:</span>
+                <span className="font-mono">{character.wallet_balance.toLocaleString()} ISK</span>
+              </div>
+            )}
+            {character.location_system_name && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Локация:</span>
+                <span>{character.location_system_name}</span>
+              </div>
+            )}
+            {character.ship_type_name && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Корабль:</span>
+                <span>{character.ship_type_name}</span>
+              </div>
+            )}
+          </div>
+        )}
         <div className="text-xs text-muted-foreground">
           Добавлен: {format(new Date(character.created_at), "dd.MM.yyyy HH:mm")}
         </div>

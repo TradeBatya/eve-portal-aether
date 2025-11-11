@@ -18,6 +18,11 @@ interface EveCharacter {
   character_id: number;
   character_name: string;
   corporation_name: string | null;
+  alliance_name: string | null;
+  wallet_balance: number | null;
+  security_status: number | null;
+  location_system_name: string | null;
+  ship_type_name: string | null;
   is_main: boolean;
   created_at: string;
 }
@@ -62,7 +67,7 @@ const Profile = () => {
     
     const { data, error } = await supabase
       .from("eve_characters")
-      .select("*")
+      .select("id, character_id, character_name, corporation_name, alliance_name, wallet_balance, security_status, location_system_name, ship_type_name, is_main, created_at")
       .eq("user_id", user.id)
       .order("is_main", { ascending: false });
 
@@ -135,14 +140,28 @@ const Profile = () => {
 
   const handleRefreshCharacter = async (characterId: string) => {
     setRefreshingId(characterId);
-    // TODO: Implement ESI refresh logic
-    setTimeout(() => {
+    try {
+      const { error } = await supabase.functions.invoke('refresh-character', {
+        body: { characterId },
+      });
+
+      if (error) throw error;
+
       toast({
-        title: language === "en" ? "Refreshed" : "Обновлено",
+        title: language === "en" ? "Success" : "Успешно",
         description: language === "en" ? "Character data updated" : "Данные персонажа обновлены",
       });
+      await fetchCharacters();
+    } catch (error) {
+      console.error("Failed to refresh character:", error);
+      toast({
+        title: language === "en" ? "Error" : "Ошибка",
+        description: language === "en" ? "Failed to update character data" : "Не удалось обновить данные персонажа",
+        variant: "destructive",
+      });
+    } finally {
       setRefreshingId(null);
-    }, 1000);
+    }
   };
 
   const handleSaveSettings = async (settings: any) => {

@@ -137,6 +137,8 @@ export type Database = {
       eve_characters: {
         Row: {
           access_token: string
+          alliance_id: number | null
+          alliance_name: string | null
           character_id: number
           character_name: string
           character_owner_hash: string
@@ -146,13 +148,22 @@ export type Database = {
           expires_at: string
           id: string
           is_main: boolean | null
+          last_refreshed_at: string | null
+          location_system_id: number | null
+          location_system_name: string | null
           refresh_token: string
           scopes: string[]
+          security_status: number | null
+          ship_type_id: number | null
+          ship_type_name: string | null
           updated_at: string
           user_id: string
+          wallet_balance: number | null
         }
         Insert: {
           access_token: string
+          alliance_id?: number | null
+          alliance_name?: string | null
           character_id: number
           character_name: string
           character_owner_hash: string
@@ -162,13 +173,22 @@ export type Database = {
           expires_at: string
           id?: string
           is_main?: boolean | null
+          last_refreshed_at?: string | null
+          location_system_id?: number | null
+          location_system_name?: string | null
           refresh_token: string
           scopes: string[]
+          security_status?: number | null
+          ship_type_id?: number | null
+          ship_type_name?: string | null
           updated_at?: string
           user_id: string
+          wallet_balance?: number | null
         }
         Update: {
           access_token?: string
+          alliance_id?: number | null
+          alliance_name?: string | null
           character_id?: number
           character_name?: string
           character_owner_hash?: string
@@ -178,10 +198,17 @@ export type Database = {
           expires_at?: string
           id?: string
           is_main?: boolean | null
+          last_refreshed_at?: string | null
+          location_system_id?: number | null
+          location_system_name?: string | null
           refresh_token?: string
           scopes?: string[]
+          security_status?: number | null
+          ship_type_id?: number | null
+          ship_type_name?: string | null
           updated_at?: string
           user_id?: string
+          wallet_balance?: number | null
         }
         Relationships: []
       }
