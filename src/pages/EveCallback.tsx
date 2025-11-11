@@ -68,7 +68,7 @@ const EveCallback = () => {
           }
         }
 
-        setStatus('Авторизация успешна! Перенаправление...');
+        setStatus('Авторизация успешна! Перенаправление в профиль...');
         
         toast({
           title: "Успешная авторизация",
@@ -76,7 +76,7 @@ const EveCallback = () => {
         });
 
         setTimeout(() => {
-          navigate('/');
+          navigate('/profile');
         }, 1000);
 
       } catch (error: any) {

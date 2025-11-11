@@ -145,6 +145,7 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          is_main: boolean | null
           refresh_token: string
           scopes: string[]
           updated_at: string
@@ -160,6 +161,7 @@ export type Database = {
           created_at?: string
           expires_at: string
           id?: string
+          is_main?: boolean | null
           refresh_token: string
           scopes: string[]
           updated_at?: string
@@ -175,6 +177,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          is_main?: boolean | null
           refresh_token?: string
           scopes?: string[]
           updated_at?: string
