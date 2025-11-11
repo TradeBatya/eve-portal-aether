@@ -28,7 +28,7 @@ serve(async (req) => {
     }
 
     // Exchange code for access token
-    const redirectUri = 'https://preview--eve-portal-aether.lovable.app/auth/discord/callback';
+    const redirectUri = `${req.headers.get('origin') || 'https://preview--eve-portal-aether.lovable.app'}/auth/discord/callback`;
     
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
