@@ -52,39 +52,49 @@ const EveCallback = () => {
         setStatus('Создание сессии...');
 
         // Используем сгенерированную ссылку для авторизации
-        if (data.session_url) {
-          // Извлекаем токены из URL
-          const url = new URL(data.session_url);
-          const accessToken = url.searchParams.get('access_token');
-          const refreshToken = url.searchParams.get('refresh_token');
-          
-          if (accessToken && refreshToken) {
-            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-
-            if (sessionError) throw sessionError;
-
-            // Дожидаемся подтверждения сессии
-            if (sessionData?.session) {
-              setStatus('Авторизация успешна! Перенаправление в профиль...');
-              
-              toast({
-                title: "Успешная авторизация",
-                description: `Добро пожаловать, ${data.character_name}!`,
-              });
-
-              // Даем время AuthContext обновиться
-              await new Promise(resolve => setTimeout(resolve, 500));
-              
-              navigate('/profile');
-              return;
-            }
-          }
+        if (!data.session_url) {
+          throw new Error('Session URL не получен от сервера');
         }
 
-        throw new Error('Не удалось создать сессию');
+        console.log('Session URL received:', data.session_url.substring(0, 50) + '...');
+
+        // Извлекаем токены из URL
+        const url = new URL(data.session_url);
+        const accessToken = url.searchParams.get('access_token');
+        const refreshToken = url.searchParams.get('refresh_token');
+        
+        console.log('Tokens extracted:', { 
+          hasAccessToken: !!accessToken, 
+          hasRefreshToken: !!refreshToken 
+        });
+
+        if (!accessToken || !refreshToken) {
+          throw new Error('Токены не найдены в session URL');
+        }
+
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          throw sessionError;
+        }
+
+        console.log('Session set successfully:', !!sessionData?.session);
+
+        setStatus('Авторизация успешна! Перенаправление в профиль...');
+        
+        toast({
+          title: "Успешная авторизация",
+          description: `Добро пожаловать, ${data.character_name}!`,
+        });
+
+        // Даем время AuthContext обновиться
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        navigate('/profile');
 
       } catch (error: any) {
         console.error('EVE Auth error:', error);
