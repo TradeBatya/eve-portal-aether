@@ -142,7 +142,7 @@ const Profile = () => {
     setRefreshingId(characterId);
     try {
       const { error } = await supabase.functions.invoke('refresh-character', {
-        body: { characterId },
+        body: { characterId, userId: user?.id },
       });
 
       if (error) throw error;

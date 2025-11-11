@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { characterId } = await req.json();
+    const { characterId, userId } = await req.json();
 
     if (!characterId) {
       throw new Error('Character ID is required');
@@ -256,6 +256,35 @@ Deno.serve(async (req) => {
     }
 
     console.log('Character data updated successfully');
+
+    // Sync EVE roles after successful character refresh
+    if (userId) {
+      try {
+        console.log('Syncing EVE roles...');
+        const syncResponse = await fetch(
+          `${supabaseUrl}/functions/v1/sync-eve-roles`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseKey}`,
+            },
+            body: JSON.stringify({ userId, characterId }),
+          }
+        );
+
+        if (!syncResponse.ok) {
+          const errorText = await syncResponse.text();
+          console.error('Failed to sync EVE roles:', errorText);
+        } else {
+          const syncResult = await syncResponse.json();
+          console.log('EVE roles synced successfully:', syncResult);
+        }
+      } catch (syncError) {
+        console.error('Error calling sync-eve-roles:', syncError);
+        // Don't fail the entire request if role sync fails
+      }
+    }
 
     return new Response(
       JSON.stringify({
