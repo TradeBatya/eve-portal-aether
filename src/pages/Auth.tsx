@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
-import { Rocket, ShieldCheck } from 'lucide-react';
+import { Rocket, ShieldCheck, Users, Target, Radio, Zap, Database, Lock } from 'lucide-react';
 
 export default function Auth() {
   const { user } = useAuth();
@@ -14,42 +14,52 @@ export default function Auth() {
 
   const t = {
     en: {
-      title: 'Join Advent Coalition',
-      subtitle: 'Connect with EVE Online and Discord',
-      description: 'Link your accounts to access operations, intel reports, and join our community.',
-      eveButton: 'Login with EVE Online',
-      eveDesc: 'Full ESI access for character management',
-      discordButton: 'Login with Discord',
-      discordDesc: 'Join our community server',
+      title: 'Advent Coalition Portal',
+      subtitle: 'Advanced Fleet Management System',
+      description: 'Secure ESI authentication for comprehensive corporation and alliance management',
+      eveButton: 'Authenticate with EVE SSO',
+      eveDesc: 'Full ESI access • Secure OAuth2 • Multi-character support',
       features: {
-        title: 'Why Join Us?',
+        title: 'Platform Capabilities',
         operation: 'Fleet Operations',
-        operationDesc: 'Participate in organized fleet ops',
+        operationDesc: 'Coordinate large-scale operations with real-time fleet composition and FC tools',
         intel: 'Intel Network',
-        intelDesc: 'Real-time hostile activity tracking',
-        community: 'Active Community',
-        communityDesc: 'Connect with corp members',
+        intelDesc: 'Live threat tracking across regions with automated hostile detection',
+        community: 'Corporation Management',
+        communityDesc: 'Manage members, roles, and permissions with EVE integration',
+        realtime: 'Real-time Updates',
+        realtimeDesc: 'WebSocket-based notifications for instant operation and intel alerts',
+        database: 'Persistent Storage',
+        databaseDesc: 'Secure database for operations history, intel archives, and analytics',
+        security: 'Enterprise Security',
+        securityDesc: 'Row-level security, encrypted credentials, and audit logging',
       },
-      security: 'Your data is secure and encrypted',
+      security: 'Enterprise-grade security with encrypted OAuth2 tokens',
+      authInfo: 'EVE Online ESI authentication provides full access to character data, corporation information, and fleet management capabilities.',
     },
     ru: {
-      title: 'Присоединяйтесь к Advent Coalition',
-      subtitle: 'Подключите EVE Online и Discord',
-      description: 'Свяжите аккаунты для доступа к операциям, разведданным и нашему сообществу.',
-      eveButton: 'Войти через EVE Online',
-      eveDesc: 'Полный ESI доступ для управления персонажами',
-      discordButton: 'Войти через Discord',
-      discordDesc: 'Присоединиться к серверу сообщества',
+      title: 'Портал Advent Coalition',
+      subtitle: 'Продвинутая система управления флотом',
+      description: 'Безопасная ESI аутентификация для комплексного управления корпорацией и альянсом',
+      eveButton: 'Авторизация через EVE SSO',
+      eveDesc: 'Полный ESI доступ • Безопасный OAuth2 • Поддержка нескольких персонажей',
       features: {
-        title: 'Почему мы?',
+        title: 'Возможности платформы',
         operation: 'Флотские операции',
-        operationDesc: 'Участвуйте в организованных операциях',
-        intel: 'Разведсеть',
-        intelDesc: 'Отслеживание враждебной активности',
-        community: 'Активное сообщество',
-        communityDesc: 'Общайтесь с членами корпорации',
+        operationDesc: 'Координация крупномасштабных операций с отслеживанием состава флота в реальном времени',
+        intel: 'Разведывательная сеть',
+        intelDesc: 'Отслеживание угроз по регионам с автоматическим обнаружением враждебных сил',
+        community: 'Управление корпорацией',
+        communityDesc: 'Управление участниками, ролями и правами доступа с интеграцией EVE',
+        realtime: 'Обновления в реальном времени',
+        realtimeDesc: 'WebSocket-уведомления для мгновенных оповещений об операциях и разведданных',
+        database: 'Постоянное хранилище',
+        databaseDesc: 'Безопасная база данных для истории операций, архивов разведки и аналитики',
+        security: 'Корпоративная безопасность',
+        securityDesc: 'Защита на уровне строк, шифрование учетных данных и журналирование',
       },
-      security: 'Ваши данные защищены и зашифрованы',
+      security: 'Корпоративная безопасность с шифрованием OAuth2 токенов',
+      authInfo: 'Аутентификация EVE Online ESI предоставляет полный доступ к данным персонажей, информации корпорации и возможностям управления флотом.',
     },
   }[language];
 
@@ -145,80 +155,159 @@ export default function Auth() {
 
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4">
+    <div className="min-h-screen relative flex items-center justify-center p-4 py-12">
       <AnimatedBackground />
       
-      <div className="w-full max-w-5xl z-10 space-y-6">
+      <div className="w-full max-w-6xl z-10 space-y-8">
         {/* Hero Section */}
-        <div className="text-center space-y-4 mb-8">
-          <h1 className="text-5xl md:text-6xl font-orbitron font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-pulse">
+        <div className="text-center space-y-6 mb-12">
+          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
+            <Rocket className="h-5 w-5 text-primary" />
+            <span className="text-sm font-medium text-primary">EVE Online Integration</span>
+          </div>
+          
+          <h1 className="text-6xl md:text-7xl font-orbitron font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
             {t.title}
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          
+          <p className="text-xl md:text-2xl text-foreground/80 max-w-3xl mx-auto font-medium">
+            {t.subtitle}
+          </p>
+          
+          <p className="text-base text-muted-foreground max-w-2xl mx-auto">
             {t.description}
           </p>
         </div>
 
         {/* Main Auth Card */}
-        <Card className="bg-card/95 backdrop-blur-sm border-border">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-orbitron">{t.subtitle}</CardTitle>
-            <CardDescription>{t.description}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* EVE Online Button */}
-            <Button
-              onClick={handleEveLogin}
-              size="lg"
-              className="w-full h-auto py-6 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all"
-            >
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3">
-                  <Rocket className="h-8 w-8" />
-                  <div className="text-left">
-                    <div className="text-lg font-bold">{t.eveButton}</div>
-                    <div className="text-sm opacity-90">{t.eveDesc}</div>
+        <Card className="bg-card/95 backdrop-blur-md border-2 border-border shadow-2xl">
+          <CardContent className="p-8">
+            <div className="space-y-6">
+              {/* Auth Info */}
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50 border border-border">
+                <Lock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {t.authInfo}
+                </p>
+              </div>
+
+              {/* EVE Online Button */}
+              <Button
+                onClick={handleEveLogin}
+                size="lg"
+                className="w-full h-auto py-8 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-600 hover:from-amber-700 hover:via-orange-700 hover:to-amber-700 text-white shadow-2xl hover:shadow-primary/50 transition-all duration-300 border-2 border-amber-400/50"
+              >
+                <div className="flex flex-col items-center gap-3 w-full">
+                  <div className="flex items-center gap-4">
+                    <Rocket className="h-10 w-10" />
+                    <div className="text-left">
+                      <div className="text-2xl font-bold tracking-wide">{t.eveButton}</div>
+                      <div className="text-sm opacity-90 font-medium mt-1">{t.eveDesc}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Button>
+              </Button>
 
-            {/* Security Notice */}
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-4">
-              <ShieldCheck className="h-4 w-4" />
-              <span>{t.security}</span>
+              {/* Security Notice */}
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <ShieldCheck className="h-4 w-4 text-green-500" />
+                <span className="font-medium">{t.security}</span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Features Grid */}
-        <div className="grid md:grid-cols-3 gap-4">
-          <Card className="bg-card/80 backdrop-blur-sm border-border">
-            <CardHeader>
-              <CardTitle className="text-lg">{t.features.operation}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{t.features.operationDesc}</p>
-            </CardContent>
-          </Card>
+        <div className="space-y-4">
+          <h2 className="text-2xl font-orbitron font-bold text-center text-foreground mb-6">
+            {t.features.title}
+          </h2>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Card className="bg-card/90 backdrop-blur-sm border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Target className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{t.features.operation}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed">{t.features.operationDesc}</p>
+              </CardContent>
+            </Card>
 
-          <Card className="bg-card/80 backdrop-blur-sm border-border">
-            <CardHeader>
-              <CardTitle className="text-lg">{t.features.intel}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{t.features.intelDesc}</p>
-            </CardContent>
-          </Card>
+            <Card className="bg-card/90 backdrop-blur-sm border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Radio className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{t.features.intel}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed">{t.features.intelDesc}</p>
+              </CardContent>
+            </Card>
 
-          <Card className="bg-card/80 backdrop-blur-sm border-border">
-            <CardHeader>
-              <CardTitle className="text-lg">{t.features.community}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{t.features.communityDesc}</p>
-            </CardContent>
-          </Card>
+            <Card className="bg-card/90 backdrop-blur-sm border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Users className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{t.features.community}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed">{t.features.communityDesc}</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card/90 backdrop-blur-sm border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Zap className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{t.features.realtime}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed">{t.features.realtimeDesc}</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card/90 backdrop-blur-sm border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Database className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{t.features.database}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed">{t.features.databaseDesc}</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card/90 backdrop-blur-sm border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Lock className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{t.features.security}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed">{t.features.securityDesc}</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
