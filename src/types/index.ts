@@ -116,4 +116,5 @@ export interface UserPlugin {
   enabled: boolean;
   settings: Record<string, any>;
   installed_at: string;
+  plugins?: Plugin;  // For joined queries
 }

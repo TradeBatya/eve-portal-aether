@@ -13,6 +13,7 @@ import { StatsWidget } from "@/components/dashboard/StatsWidget";
 import { PingsWidget } from "@/components/dashboard/PingsWidget";
 import { DashboardWelcome } from "@/components/dashboard/DashboardWelcome";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { PluginsWidget } from "@/components/dashboard/PluginsWidget";
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -95,6 +96,11 @@ const Dashboard = () => {
           {/* Intel Widget */}
           <div className="lg:col-span-1">
             <IntelWidget />
+          </div>
+
+          {/* Plugins Widget - Full width */}
+          <div className="lg:col-span-3">
+            <PluginsWidget />
           </div>
         </div>
       </div>
