@@ -2,3 +2,6 @@ project_id = "wncskhubrkivfcgigemz"
 
 [functions.eve-auth]
 verify_jwt = false
+
+[functions.cleanup-users]
+verify_jwt = false

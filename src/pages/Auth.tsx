@@ -72,7 +72,7 @@ export default function Auth() {
 
   const handleEveLogin = () => {
     const clientId = '9b9086e27f4940d8a8c64c2881944375';
-    const redirectUri = `${window.location.origin}/auth/eve/callback`;
+    const redirectUri = 'https://preview--eve-portal-aether.lovable.app/auth/eve/callback';
     
     // Full scope list for EVE SSO
     const scopes = [
