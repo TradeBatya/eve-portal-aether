@@ -3,7 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { SideNav } from "@/components/SideNav";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, Plug, Loader2 } from "lucide-react";
+import { Menu, Plug, Loader2, User, TrendingUp, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +42,19 @@ const Plugins = () => {
 
   const getUserPlugin = (pluginId: string) => {
     return userPlugins?.find(up => up.plugin_id === pluginId);
+  };
+
+  const getPluginIcon = (pluginId: string) => {
+    switch (pluginId) {
+      case 'character-overview':
+        return <User className="w-5 h-5" />;
+      case 'skill-monitor':
+        return <TrendingUp className="w-5 h-5" />;
+      case 'wallet-tracker':
+        return <Wallet className="w-5 h-5" />;
+      default:
+        return <Plug className="w-5 h-5" />;
+    }
   };
 
   const t = {
@@ -103,10 +116,15 @@ const Plugins = () => {
           {userPlugins && userPlugins.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {userPlugins.map((userPlugin) => (
-                <Card key={userPlugin.id}>
+                <Card key={userPlugin.id} className="hover:border-primary/50 transition-colors">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      <span>{userPlugin.plugins?.name}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                          {getPluginIcon(userPlugin.plugins?.plugin_id || '')}
+                        </div>
+                        <span>{userPlugin.plugins?.name}</span>
+                      </div>
                       <Switch
                         checked={userPlugin.enabled}
                         onCheckedChange={(checked) => 
@@ -158,9 +176,14 @@ const Plugins = () => {
               {availablePlugins
                 .filter(plugin => !isPluginInstalled(plugin.id))
                 .map((plugin) => (
-                  <Card key={plugin.id}>
+                  <Card key={plugin.id} className="hover:border-primary/50 transition-colors">
                     <CardHeader>
-                      <CardTitle>{plugin.name}</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                          {getPluginIcon(plugin.plugin_id)}
+                        </div>
+                        {plugin.name}
+                      </CardTitle>
                       <CardDescription>{plugin.description}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">

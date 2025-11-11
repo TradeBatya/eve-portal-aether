@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plug, Loader2 } from "lucide-react";
+import { Plug, Loader2, User, TrendingUp, Wallet } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserPlugins } from "@/hooks/usePlugins";
@@ -43,6 +43,19 @@ export const PluginsWidget = () => {
     }
   };
 
+  const getPluginIcon = (pluginId: string) => {
+    switch (pluginId) {
+      case 'character-overview':
+        return <User className="w-5 h-5" />;
+      case 'skill-monitor':
+        return <TrendingUp className="w-5 h-5" />;
+      case 'wallet-tracker':
+        return <Wallet className="w-5 h-5" />;
+      default:
+        return <Plug className="w-5 h-5" />;
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -77,10 +90,12 @@ export const PluginsWidget = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold flex items-center gap-2">
-          <Plug className="w-6 h-6 text-primary" />
-          {t.title}
-        </h2>
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Plug className="w-6 h-6 text-primary" />
+          </div>
+          <h2 className="text-2xl font-semibold">{t.title}</h2>
+        </div>
         <Button variant="outline" size="sm" onClick={() => navigate('/plugins')}>
           {t.manage}
         </Button>
