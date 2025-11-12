@@ -3,18 +3,25 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { SideNav } from "@/components/SideNav";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, Plug, Loader2, User, TrendingUp, Wallet, Package, ClipboardList } from "lucide-react";
+import { Menu, Plug, Loader2, User, TrendingUp, Wallet, Package, ClipboardList, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePluginsData, useUserPlugins, useInstallPlugin, useTogglePlugin, useUninstallPlugin } from "@/hooks/usePlugins";
+import { MemberAudit } from "@/components/plugins/MemberAudit";
+import { CharacterOverview } from "@/components/plugins/CharacterOverview";
+import { SkillMonitor } from "@/components/plugins/SkillMonitor";
+import { WalletTracker } from "@/components/plugins/WalletTracker";
+import { AssetManager } from "@/components/plugins/AssetManager";
 
 const Plugins = () => {
   const { user, loading: authLoading } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
+  const [selectedPlugin, setSelectedPlugin] = useState<string | null>(null);
 
   const { data: availablePlugins, isLoading: pluginsLoading } = usePluginsData();
   const { data: userPlugins, isLoading: userPluginsLoading } = useUserPlugins(user?.id);
@@ -61,34 +68,67 @@ const Plugins = () => {
     }
   };
 
+  const renderPluginContent = (pluginId: string) => {
+    switch (pluginId) {
+      case 'member-audit':
+        return <MemberAudit />;
+      case 'character-overview':
+        return <CharacterOverview />;
+      case 'skill-monitor':
+        return <SkillMonitor />;
+      case 'wallet-tracker':
+        return <WalletTracker />;
+      case 'asset-manager':
+        return <AssetManager />;
+      default:
+        return (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              Plugin content not available
+            </CardContent>
+          </Card>
+        );
+    }
+  };
+
+  const enabledPlugins = userPlugins?.filter(up => up.enabled) || [];
+
   const t = {
     en: {
       title: "Plugins",
       subtitle: "Manage your installed plugins",
       available: "Available Plugins",
       installed: "Installed Plugins",
+      active: "Active Plugins",
+      management: "Plugin Management",
       install: "Install",
       uninstall: "Uninstall",
       enable: "Enable",
       disable: "Disable",
+      open: "Open",
       version: "Version",
       author: "Author",
       noPlugins: "No plugins available",
       noInstalled: "No plugins installed yet",
+      noActive: "No active plugins. Install and enable plugins to get started.",
     },
     ru: {
       title: "Плагины",
       subtitle: "Управление установленными плагинами",
       available: "Доступные плагины",
       installed: "Установленные плагины",
+      active: "Активные плагины",
+      management: "Управление плагинами",
       install: "Установить",
       uninstall: "Удалить",
       enable: "Включить",
       disable: "Отключить",
+      open: "Открыть",
       version: "Версия",
       author: "Автор",
       noPlugins: "Нет доступных плагинов",
       noInstalled: "Плагины еще не установлены",
+      noActive: "Нет активных плагинов. Установите и включите плагины для начала работы.",
     },
   }[language];
 
@@ -114,114 +154,182 @@ const Plugins = () => {
           <p className="text-muted-foreground mt-2">{t.subtitle}</p>
         </div>
 
-        {/* Installed Plugins */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">{t.installed}</h2>
-          {userPlugins && userPlugins.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {userPlugins.map((userPlugin) => (
-                <Card key={userPlugin.id} className="hover:border-primary/50 transition-colors">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                          {getPluginIcon(userPlugin.plugins?.plugin_id || '')}
-                        </div>
-                        <span>{userPlugin.plugins?.name}</span>
-                      </div>
-                      <Switch
-                        checked={userPlugin.enabled}
-                        onCheckedChange={(checked) => 
-                          togglePlugin.mutate({ id: userPlugin.id, enabled: checked })
-                        }
-                      />
-                    </CardTitle>
-                    <CardDescription>
-                      {userPlugin.plugins?.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>{t.version}:</span>
-                      <Badge variant="secondary">{userPlugin.plugins?.version}</Badge>
-                    </div>
-                    {userPlugin.plugins?.author && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{t.author}:</span>
-                        <span>{userPlugin.plugins.author}</span>
-                      </div>
-                    )}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="w-full mt-4"
-                      onClick={() => uninstallPlugin.mutate(userPlugin.id)}
-                    >
-                      {t.uninstall}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                {t.noInstalled}
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        <Tabs defaultValue="active" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="active">{t.active}</TabsTrigger>
+            <TabsTrigger value="installed">{t.installed}</TabsTrigger>
+            <TabsTrigger value="available">{t.available}</TabsTrigger>
+          </TabsList>
 
-        {/* Available Plugins */}
-        <div>
-          <h2 className="text-2xl font-semibold mb-4">{t.available}</h2>
-          {availablePlugins && availablePlugins.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {availablePlugins
-                .filter(plugin => !isPluginInstalled(plugin.id))
-                .map((plugin) => (
-                  <Card key={plugin.id} className="hover:border-primary/50 transition-colors">
+          {/* Active Plugins Tab */}
+          <TabsContent value="active" className="space-y-6">
+            {enabledPlugins.length > 0 ? (
+              <>
+                {/* Plugin Selection Cards */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {enabledPlugins.map((userPlugin) => (
+                    <Card 
+                      key={userPlugin.id} 
+                      className={`cursor-pointer transition-all ${
+                        selectedPlugin === userPlugin.plugins?.plugin_id 
+                          ? 'border-primary shadow-lg' 
+                          : 'hover:border-primary/50'
+                      }`}
+                      onClick={() => setSelectedPlugin(userPlugin.plugins?.plugin_id || null)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                              {getPluginIcon(userPlugin.plugins?.plugin_id || '')}
+                            </div>
+                            <span>{userPlugin.plugins?.name}</span>
+                          </div>
+                          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                        </CardTitle>
+                        <CardDescription>
+                          {userPlugin.plugins?.description}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Selected Plugin Content */}
+                {selectedPlugin && (
+                  <div className="mt-6">
+                    {renderPluginContent(selectedPlugin)}
+                  </div>
+                )}
+
+                {!selectedPlugin && (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <Plug className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">
+                        Select a plugin above to view its content
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  <Plug className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  {t.noActive}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Installed Plugins Tab */}
+          <TabsContent value="installed">
+            {userPlugins && userPlugins.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {userPlugins.map((userPlugin) => (
+                  <Card key={userPlugin.id} className="hover:border-primary/50 transition-colors">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                          {getPluginIcon(plugin.plugin_id)}
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                            {getPluginIcon(userPlugin.plugins?.plugin_id || '')}
+                          </div>
+                          <span>{userPlugin.plugins?.name}</span>
                         </div>
-                        {plugin.name}
+                        <Switch
+                          checked={userPlugin.enabled}
+                          onCheckedChange={(checked) => 
+                            togglePlugin.mutate({ id: userPlugin.id, enabled: checked })
+                          }
+                        />
                       </CardTitle>
-                      <CardDescription>{plugin.description}</CardDescription>
+                      <CardDescription>
+                        {userPlugin.plugins?.description}
+                      </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>{t.version}:</span>
-                        <Badge variant="secondary">{plugin.version}</Badge>
+                        <Badge variant="secondary">{userPlugin.plugins?.version}</Badge>
                       </div>
-                      {plugin.author && (
+                      {userPlugin.plugins?.author && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <span>{t.author}:</span>
-                          <span>{plugin.author}</span>
+                          <span>{userPlugin.plugins.author}</span>
                         </div>
                       )}
                       <Button
+                        variant="destructive"
+                        size="sm"
                         className="w-full mt-4"
-                        onClick={() => installPlugin.mutate({ 
-                          userId: user!.id, 
-                          pluginId: plugin.id 
-                        })}
+                        onClick={() => uninstallPlugin.mutate(userPlugin.id)}
                       >
-                        {t.install}
+                        {t.uninstall}
                       </Button>
                     </CardContent>
                   </Card>
                 ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                {t.noPlugins}
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  {t.noInstalled}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Available Plugins Tab */}
+          <TabsContent value="available">
+            {availablePlugins && availablePlugins.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {availablePlugins
+                  .filter(plugin => !isPluginInstalled(plugin.id))
+                  .map((plugin) => (
+                    <Card key={plugin.id} className="hover:border-primary/50 transition-colors">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                            {getPluginIcon(plugin.plugin_id)}
+                          </div>
+                          {plugin.name}
+                        </CardTitle>
+                        <CardDescription>{plugin.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span>{t.version}:</span>
+                          <Badge variant="secondary">{plugin.version}</Badge>
+                        </div>
+                        {plugin.author && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>{t.author}:</span>
+                            <span>{plugin.author}</span>
+                          </div>
+                        )}
+                        <Button
+                          className="w-full mt-4"
+                          onClick={() => installPlugin.mutate({ 
+                            userId: user!.id, 
+                            pluginId: plugin.id 
+                          })}
+                        >
+                          {t.install}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  {t.noPlugins}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
