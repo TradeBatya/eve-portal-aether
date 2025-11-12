@@ -19,6 +19,7 @@ import Statistics from "./pages/Statistics";
 import EveCallback from "./pages/EveCallback";
 import DiscordCallback from "./pages/DiscordCallback";
 import NotFound from "./pages/NotFound";
+import Developer from "./pages/Developer";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
                 <Route path="/auth/eve/callback" element={<EveCallback />} />
                 <Route path="/auth/discord/callback" element={<DiscordCallback />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/developer" element={<Developer />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/operations" element={<Operations />} />
