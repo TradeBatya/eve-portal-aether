@@ -20,3 +20,6 @@ verify_jwt = true
 
 [functions.send-discord-notification]
 verify_jwt = false
+
+[functions.update-member-audit]
+verify_jwt = true
