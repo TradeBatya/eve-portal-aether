@@ -58,7 +58,7 @@ export function EsiStatus() {
       const endpointChecks = [
         { name: 'Status', url: `${ESI_BASE_URL}/status/` },
         { name: 'Universe', url: `${ESI_BASE_URL}/universe/systems/30000142/` }, // Jita system
-        { name: 'Search', url: `${ESI_BASE_URL}/search/?categories=character&datasource=tranquility&language=en&search=CCP&strict=false` },
+        { name: 'Markets', url: `${ESI_BASE_URL}/markets/10000002/orders/?datasource=tranquility&order_type=all&page=1&type_id=34` }, // The Forge region
       ];
 
       const endpointResults = await Promise.allSettled(

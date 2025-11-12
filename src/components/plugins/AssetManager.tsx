@@ -73,7 +73,10 @@ export const AssetManager = () => {
   // Get unique location and type IDs for name resolution
   const locationIds = useMemo(() => {
     if (!assetsData) return [];
-    return [...new Set(assetsData.map((a: Asset) => a.location_id))] as number[];
+    // Filter out structure IDs (>= 1000000000000) as they can't be resolved via /universe/names/
+    const allIds = [...new Set(assetsData.map((a: Asset) => a.location_id))];
+    const validIds = allIds.filter((id): id is number => typeof id === 'number' && id < 1000000000000);
+    return validIds;
   }, [assetsData]);
 
   const typeIds = useMemo(() => {
@@ -86,12 +89,26 @@ export const AssetManager = () => {
 
   // Group assets by location
   const locationGroups = useMemo(() => {
-    if (!assetsData || !locationNames || !typeNames) return [];
+    if (!assetsData) return [];
+
+    // Helper to get location name with fallback for structures
+    const getLocationName = (locationId: number) => {
+      if (locationId >= 1000000000000) {
+        return `Structure ${locationId}`;
+      }
+      return locationNames?.find((n: any) => n.id === locationId)?.name || `Location ${locationId}`;
+    };
+
+    const getLocationType = (locationId: number): string => {
+      if (locationId >= 60000000 && locationId < 64000000) return 'station';
+      if (locationId >= 1000000000000) return 'structure';
+      return 'space';
+    };
 
     const groups = new Map<number, LocationGroup>();
 
     assetsData.forEach((asset: Asset) => {
-      const locationName = locationNames?.find((n: any) => n.id === asset.location_id)?.name || `Location ${asset.location_id}`;
+      const locationName = getLocationName(asset.location_id);
       
       if (!groups.has(asset.location_id)) {
         groups.set(asset.location_id, {
@@ -112,7 +129,7 @@ export const AssetManager = () => {
     return Array.from(groups.values()).sort((a, b) => 
       a.location_name.localeCompare(b.location_name)
     );
-  }, [assetsData, locationNames, typeNames]);
+  }, [assetsData, locationNames]);
 
   // Filter locations by search
   const filteredGroups = useMemo(() => {
@@ -127,12 +144,6 @@ export const AssetManager = () => {
       })
     );
   }, [locationGroups, searchQuery, typeNames]);
-
-  const getLocationType = (locationId: number): string => {
-    if (locationId >= 60000000 && locationId < 64000000) return 'station';
-    if (locationId >= 1000000000000) return 'structure';
-    return 'space';
-  };
 
   const toggleLocation = (locationId: number) => {
     const newExpanded = new Set(expandedLocations);
@@ -168,11 +179,14 @@ export const AssetManager = () => {
   };
 
   const exportToCSV = () => {
-    if (!assetsData || !typeNames || !locationNames) return;
+    if (!assetsData || !typeNames) return;
 
     const headers = ['Location', 'Item', 'Quantity', 'Type'];
     const rows = assetsData.map((asset: Asset) => {
-      const location = locationNames?.find((n: any) => n.id === asset.location_id)?.name || asset.location_id;
+      // Get location name with structure fallback
+      const location = asset.location_id >= 1000000000000 
+        ? `Structure ${asset.location_id}`
+        : (locationNames?.find((n: any) => n.id === asset.location_id)?.name || `Location ${asset.location_id}`);
       const item = typeNames?.find((n: any) => n.id === asset.type_id)?.name || asset.type_id;
       return [location, item, asset.quantity, asset.is_singleton ? 'Single' : 'Stack'];
     });
