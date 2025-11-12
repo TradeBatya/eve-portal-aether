@@ -1,9 +1,12 @@
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMemberAuditSkills, useMemberAuditSkillqueue } from '@/hooks/useMemberAudit';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BookOpen, Clock, Search } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface MemberAuditSkillsProps {
@@ -13,6 +16,24 @@ interface MemberAuditSkillsProps {
 export const MemberAuditSkills = ({ characterId }: MemberAuditSkillsProps) => {
   const { data: skills = [], isLoading: loadingSkills } = useMemberAuditSkills(characterId || undefined);
   const { data: skillqueue = [], isLoading: loadingQueue } = useMemberAuditSkillqueue(characterId || undefined);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+
+  // Get unique skill groups
+  const skillGroups = useMemo(() => {
+    const groups = new Set(skills.map(s => s.skill_group_name).filter(Boolean));
+    return Array.from(groups).sort();
+  }, [skills]);
+
+  // Filter skills
+  const filteredSkills = useMemo(() => {
+    return skills.filter(skill => {
+      const matchesSearch = skill.skill_name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesGroup = selectedGroup === 'all' || skill.skill_group_name === selectedGroup;
+      return matchesSearch && matchesGroup;
+    });
+  }, [skills, searchQuery, selectedGroup]);
 
   if (!characterId) {
     return (
@@ -95,19 +116,45 @@ export const MemberAuditSkills = ({ characterId }: MemberAuditSkillsProps) => {
       {/* All Skills */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            All Skills
-          </CardTitle>
-          <CardDescription>
-            {skills.length} skills trained
-          </CardDescription>
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              All Skills
+            </CardTitle>
+            <CardDescription>
+              {filteredSkills.length} of {skills.length} skills trained
+            </CardDescription>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search skills..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All groups" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All groups</SelectItem>
+                {skillGroups.map(group => (
+                  <SelectItem key={group} value={group}>{group}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           {loadingSkills ? (
             <p className="text-muted-foreground text-center py-4">Loading...</p>
-          ) : skills.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No skills data available</p>
+          ) : filteredSkills.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">
+              {searchQuery || selectedGroup !== 'all' ? 'No skills match your filters' : 'No skills data available'}
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -119,7 +166,7 @@ export const MemberAuditSkills = ({ characterId }: MemberAuditSkillsProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {skills.map((skill) => (
+                {filteredSkills.map((skill) => (
                   <TableRow key={skill.id}>
                     <TableCell className="font-medium">{skill.skill_name}</TableCell>
                     <TableCell>
