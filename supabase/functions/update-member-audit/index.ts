@@ -87,18 +87,46 @@ async function fetchESI(
   }
 }
 
-// Helper to resolve type IDs to names
+// Helper to resolve type IDs to names using /universe/types/
 async function resolveTypeNames(typeIds: number[]): Promise<Map<number, string>> {
   const names = new Map<number, string>();
   
   if (typeIds.length === 0) return names;
 
+  // Batch fetch type information
+  const batchSize = 100;
+  for (let i = 0; i < typeIds.length; i += batchSize) {
+    const batch = typeIds.slice(i, i + batchSize);
+    
+    await Promise.all(
+      batch.map(async (typeId) => {
+        try {
+          const response = await fetch(`https://esi.evetech.net/latest/universe/types/${typeId}/`);
+          if (response.ok) {
+            const data = await response.json();
+            names.set(typeId, data.name);
+          }
+        } catch (error) {
+          console.error(`[ESI] Failed to resolve type ${typeId}:`, error);
+        }
+      })
+    );
+  }
+
+  return names;
+}
+
+// Helper to resolve entity IDs to names using /universe/names/
+async function resolveEntityNames(entityIds: number[]): Promise<Map<number, string>> {
+  const names = new Map<number, string>();
+  
+  if (entityIds.length === 0) return names;
+
   try {
-    // ESI /universe/names/ accepts POST with array of IDs
     const response = await fetch('https://esi.evetech.net/latest/universe/names/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(typeIds),
+      body: JSON.stringify(entityIds),
     });
 
     if (response.ok) {
@@ -108,7 +136,7 @@ async function resolveTypeNames(typeIds: number[]): Promise<Map<number, string>>
       });
     }
   } catch (error) {
-    console.error('[ESI] Failed to resolve type names:', error);
+    console.error('[ESI] Failed to resolve entity names:', error);
   }
 
   return names;
@@ -450,7 +478,7 @@ async function updateContacts(characterId: number, accessToken: string, supabase
 
   // Resolve contact names
   const contactIds = res.data.map((c: any) => c.contact_id);
-  const contactNames = await resolveTypeNames(contactIds);
+  const contactNames = await resolveEntityNames(contactIds);
 
   let updated = 0;
   for (const contact of res.data) {
@@ -491,7 +519,7 @@ async function updateContracts(characterId: number, accessToken: string, supabas
 
   // Resolve issuer names
   const issuerIds = [...new Set(res.data.map((c: any) => c.issuer_id))] as number[];
-  const issuerNames = await resolveTypeNames(issuerIds);
+  const issuerNames = await resolveEntityNames(issuerIds);
 
   let updated = 0;
   for (const contract of res.data) {
@@ -600,7 +628,7 @@ async function updateLoyalty(characterId: number, accessToken: string, supabase:
 
   // Resolve corporation names
   const corpIds = res.data.map((lp: any) => lp.corporation_id);
-  const corpNames = await resolveTypeNames(corpIds);
+  const corpNames = await resolveEntityNames(corpIds);
 
   let updated = 0;
   for (const lp of res.data) {

@@ -31,33 +31,23 @@ export const SkillMonitor = () => {
     enabled: !!user?.id,
   });
 
-  // Mock skill queue data - in production this would come from ESI API
-  const mockSkillQueue = [
-    {
-      skill_name: "Caldari Battleship V",
-      level: 5,
-      training_start: new Date(Date.now() - 86400000 * 2),
-      training_end: new Date(Date.now() + 86400000 * 3),
-      trained_sp: 1280000,
-      total_sp: 2560000,
+  // Get skill queue from Member Audit
+  const { data: skillQueue } = useQuery({
+    queryKey: ['member-audit-skillqueue', mainCharacter?.character_id],
+    queryFn: async () => {
+      if (!mainCharacter?.character_id) return [];
+      
+      const { data, error } = await supabase
+        .from('member_audit_skillqueue')
+        .select('*')
+        .eq('character_id', mainCharacter.character_id)
+        .order('queue_position', { ascending: true });
+
+      if (error) throw error;
+      return data;
     },
-    {
-      skill_name: "Large Hybrid Turret V",
-      level: 5,
-      training_start: new Date(Date.now() + 86400000 * 3),
-      training_end: new Date(Date.now() + 86400000 * 8),
-      trained_sp: 0,
-      total_sp: 1280000,
-    },
-    {
-      skill_name: "Gunnery V",
-      level: 5,
-      training_start: new Date(Date.now() + 86400000 * 8),
-      training_end: new Date(Date.now() + 86400000 * 10),
-      trained_sp: 0,
-      total_sp: 256000,
-    },
-  ];
+    enabled: !!mainCharacter?.character_id,
+  });
 
   const t = {
     en: {
@@ -98,8 +88,32 @@ export const SkillMonitor = () => {
     );
   }
 
-  const activeSkill = mockSkillQueue[0];
-  const progressPercent = (activeSkill.trained_sp / activeSkill.total_sp) * 100;
+  if (!skillQueue || skillQueue.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="w-5 h-5" />
+            {t.title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          {t.noQueue}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const activeSkill = skillQueue[0];
+  const now = Date.now();
+  const startTime = activeSkill.start_date ? new Date(activeSkill.start_date).getTime() : now;
+  const endTime = activeSkill.finish_date ? new Date(activeSkill.finish_date).getTime() : now;
+  const totalTime = endTime - startTime;
+  const elapsed = now - startTime;
+  const progressPercent = totalTime > 0 ? Math.min(100, Math.max(0, (elapsed / totalTime) * 100)) : 0;
+
+  const trainedSp = activeSkill.training_start_sp || 0;
+  const totalSp = activeSkill.level_end_sp || activeSkill.training_start_sp || 0;
 
   return (
     <Card>
@@ -121,7 +135,7 @@ export const SkillMonitor = () => {
                 {activeSkill.skill_name}
               </h4>
               <p className="text-sm text-muted-foreground">
-                Level {activeSkill.level}
+                Level {activeSkill.finished_level}
               </p>
             </div>
             <div className="text-right">
@@ -138,11 +152,11 @@ export const SkillMonitor = () => {
           
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">
-              {activeSkill.trained_sp.toLocaleString()} / {activeSkill.total_sp.toLocaleString()} {t.sp}
+              {trainedSp.toLocaleString()} / {totalSp.toLocaleString()} {t.sp}
             </span>
             <span className="flex items-center gap-1 text-primary font-medium">
               <Clock className="w-4 h-4" />
-              {formatDistanceToNow(activeSkill.training_end, { 
+              {activeSkill.finish_date && formatDistanceToNow(new Date(activeSkill.finish_date), { 
                 locale: language === 'ru' ? ru : undefined,
                 addSuffix: true 
               })}
@@ -154,12 +168,14 @@ export const SkillMonitor = () => {
         <div className="grid grid-cols-2 gap-4">
           <div className="p-3 rounded-lg bg-muted/50">
             <div className="text-xs text-muted-foreground mb-1">{t.queuedSkills}</div>
-            <div className="text-2xl font-bold">{mockSkillQueue.length}</div>
+            <div className="text-2xl font-bold">{skillQueue.length}</div>
           </div>
           <div className="p-3 rounded-lg bg-muted/50">
             <div className="text-xs text-muted-foreground mb-1">{t.totalQueueTime}</div>
             <div className="text-2xl font-bold">
-              {Math.ceil((mockSkillQueue[mockSkillQueue.length - 1].training_end.getTime() - Date.now()) / 86400000)} {t.days}
+              {skillQueue.length > 0 && skillQueue[skillQueue.length - 1].finish_date
+                ? Math.ceil((new Date(skillQueue[skillQueue.length - 1].finish_date).getTime() - Date.now()) / 86400000)
+                : 0} {t.days}
             </div>
           </div>
         </div>
@@ -171,9 +187,9 @@ export const SkillMonitor = () => {
             {t.skillQueue}
           </h4>
           <div className="space-y-2">
-            {mockSkillQueue.map((skill, index) => (
+            {skillQueue.map((skill, index) => (
               <div
-                key={index}
+                key={skill.id}
                 className={`p-3 rounded-lg border transition-colors ${
                   index === 0 
                     ? 'border-primary/30 bg-primary/5' 
@@ -184,21 +200,21 @@ export const SkillMonitor = () => {
                   <div className="flex-1">
                     <div className="font-medium text-sm">{skill.skill_name}</div>
                     <div className="text-xs text-muted-foreground">
-                      Level {skill.level} • {(skill.total_sp / 1000).toFixed(0)}k {t.sp}
+                      Level {skill.finished_level} • {((skill.level_end_sp || 0) / 1000).toFixed(0)}k {t.sp}
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground text-right">
-                    {index === 0 ? (
+                    {index === 0 && skill.finish_date ? (
                       <span className="text-primary font-medium">
-                        {formatDistanceToNow(skill.training_end, { 
+                        {formatDistanceToNow(new Date(skill.finish_date), { 
                           locale: language === 'ru' ? ru : undefined 
                         })}
                       </span>
-                    ) : (
-                      formatDistanceToNow(skill.training_start, { 
+                    ) : skill.start_date ? (
+                      formatDistanceToNow(new Date(skill.start_date), { 
                         locale: language === 'ru' ? ru : undefined 
                       })
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>

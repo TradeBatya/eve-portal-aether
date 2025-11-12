@@ -28,6 +28,26 @@ export const CharacterOverview = () => {
     enabled: !!user?.id,
   });
 
+  const mainCharacter = characters?.find(c => c.is_main) || characters?.[0];
+
+  // Get Member Audit metadata for main character
+  const { data: metadata } = useQuery({
+    queryKey: ['member-audit-metadata', mainCharacter?.character_id],
+    queryFn: async () => {
+      if (!mainCharacter?.character_id) return null;
+      
+      const { data, error } = await supabase
+        .from('member_audit_metadata')
+        .select('*')
+        .eq('character_id', mainCharacter.character_id)
+        .single();
+
+      if (error) return null;
+      return data;
+    },
+    enabled: !!mainCharacter?.character_id,
+  });
+
   const t = {
     en: {
       title: "Character Overview",
@@ -73,8 +93,6 @@ export const CharacterOverview = () => {
     );
   }
 
-  const mainCharacter = characters.find(c => c.is_main) || characters[0];
-
   return (
     <Card>
       <CardHeader>
@@ -117,7 +135,7 @@ export const CharacterOverview = () => {
           </div>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Use metadata from Member Audit */}
         <div className="grid grid-cols-2 gap-4">
           {mainCharacter.security_status !== null && (
             <div className="p-3 rounded-lg bg-muted/50">
@@ -127,11 +145,11 @@ export const CharacterOverview = () => {
               </div>
             </div>
           )}
-          {mainCharacter.wallet_balance !== null && (
+          {metadata?.wallet_balance !== null && (
             <div className="p-3 rounded-lg bg-muted/50">
               <div className="text-xs text-muted-foreground mb-1">{t.wallet}</div>
               <div className="font-semibold">
-                {Number(mainCharacter.wallet_balance).toLocaleString()} ISK
+                {Number(metadata?.wallet_balance || 0).toLocaleString()} ISK
               </div>
             </div>
           )}
