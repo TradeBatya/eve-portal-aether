@@ -57,8 +57,8 @@ export function EsiStatus() {
       // Check individual endpoints
       const endpointChecks = [
         { name: 'Status', url: `${ESI_BASE_URL}/status/` },
-        { name: 'Universe', url: `${ESI_BASE_URL}/universe/types/34/` },
-        { name: 'Characters', url: `${ESI_BASE_URL}/characters/1/` },
+        { name: 'Universe', url: `${ESI_BASE_URL}/universe/systems/30000142/` }, // Jita system
+        { name: 'Search', url: `${ESI_BASE_URL}/search/?categories=character&datasource=tranquility&language=en&search=CCP&strict=false` },
       ];
 
       const endpointResults = await Promise.allSettled(

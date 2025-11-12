@@ -168,16 +168,24 @@ export const useUniverseNames = (ids: number[]) => {
   return useQuery({
     queryKey: ['universe-names', ids],
     queryFn: async () => {
-      if (!ids || ids.length === 0) return [];
+      // Filter out invalid IDs (null, undefined, 0, negative)
+      const validIds = ids.filter(id => id && id > 0);
+      
+      if (!validIds || validIds.length === 0) return [];
+      
       const response = await fetch('https://esi.evetech.net/latest/universe/names/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(ids),
+        body: JSON.stringify(validIds),
       });
-      if (!response.ok) throw new Error('Failed to fetch names');
+      if (!response.ok) {
+        console.error(`Failed to fetch names for IDs: ${validIds.join(', ')}`);
+        return [];
+      }
       return response.json();
     },
-    enabled: ids && ids.length > 0,
+    enabled: ids && ids.length > 0 && ids.some(id => id && id > 0),
     staleTime: 86400000, // 24 hours
+    retry: false, // Don't retry failed requests
   });
 };
