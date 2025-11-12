@@ -97,6 +97,63 @@ export type Database = {
           },
         ]
       }
+      character_assets: {
+        Row: {
+          character_id: number
+          created_at: string | null
+          estimated_value: number | null
+          id: string
+          is_blueprint_copy: boolean | null
+          is_singleton: boolean | null
+          item_id: number
+          last_updated: string | null
+          location_id: number
+          location_name: string | null
+          location_type: string | null
+          parent_item_id: number | null
+          quantity: number
+          type_id: number
+          type_name: string | null
+          user_id: string
+        }
+        Insert: {
+          character_id: number
+          created_at?: string | null
+          estimated_value?: number | null
+          id?: string
+          is_blueprint_copy?: boolean | null
+          is_singleton?: boolean | null
+          item_id: number
+          last_updated?: string | null
+          location_id: number
+          location_name?: string | null
+          location_type?: string | null
+          parent_item_id?: number | null
+          quantity?: number
+          type_id: number
+          type_name?: string | null
+          user_id: string
+        }
+        Update: {
+          character_id?: number
+          created_at?: string | null
+          estimated_value?: number | null
+          id?: string
+          is_blueprint_copy?: boolean | null
+          is_singleton?: boolean | null
+          item_id?: number
+          last_updated?: string | null
+          location_id?: number
+          location_name?: string | null
+          location_type?: string | null
+          parent_item_id?: number | null
+          quantity?: number
+          type_id?: number
+          type_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       corporation_role_mappings: {
         Row: {
           auto_assign: boolean | null

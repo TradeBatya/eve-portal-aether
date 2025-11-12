@@ -147,3 +147,37 @@ export const useAllianceInfo = (allianceId?: number) => {
     staleTime: 3600000, // 1 hour
   });
 };
+
+export const useCharacterAssets = (characterId?: number, accessToken?: string) => {
+  const { fetchEsi } = useEsiApi();
+
+  return useQuery({
+    queryKey: ['character-assets', characterId],
+    queryFn: async () => {
+      if (!characterId || !accessToken) throw new Error('Character ID and access token required');
+      return fetchEsi(`/characters/${characterId}/assets/`, { characterId, accessToken });
+    },
+    enabled: !!characterId && !!accessToken,
+    staleTime: 21600000, // 6 hours
+  });
+};
+
+export const useUniverseNames = (ids: number[]) => {
+  const { fetchEsi } = useEsiApi();
+
+  return useQuery({
+    queryKey: ['universe-names', ids],
+    queryFn: async () => {
+      if (!ids || ids.length === 0) return [];
+      const response = await fetch('https://esi.evetech.net/latest/universe/names/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ids),
+      });
+      if (!response.ok) throw new Error('Failed to fetch names');
+      return response.json();
+    },
+    enabled: ids && ids.length > 0,
+    staleTime: 86400000, // 24 hours
+  });
+};
