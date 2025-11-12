@@ -17,7 +17,7 @@ interface ESIResponse {
   responseTime: number;
 }
 
-// ESI Helper - fetch с логированием
+// ESI Helper - fetch with logging
 async function fetchESI(
   endpoint: string,
   accessToken: string,
@@ -40,7 +40,7 @@ async function fetchESI(
     const responseTime = Date.now() - startTime;
     const data = await response.json();
 
-    // Логируем запрос
+    // Log request
     await supabase.from('member_audit_esi_logs').insert({
       character_id: characterId,
       endpoint,
@@ -85,6 +85,33 @@ async function fetchESI(
       responseTime,
     };
   }
+}
+
+// Helper to resolve type IDs to names
+async function resolveTypeNames(typeIds: number[]): Promise<Map<number, string>> {
+  const names = new Map<number, string>();
+  
+  if (typeIds.length === 0) return names;
+
+  try {
+    // ESI /universe/names/ accepts POST with array of IDs
+    const response = await fetch('https://esi.evetech.net/latest/universe/names/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(typeIds),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      data.forEach((item: any) => {
+        names.set(item.id, item.name);
+      });
+    }
+  } catch (error) {
+    console.error('[ESI] Failed to resolve type names:', error);
+  }
+
+  return names;
 }
 
 // Обновление токена
@@ -142,14 +169,19 @@ async function updateSkills(characterId: number, accessToken: string, supabase: 
   }
 
   const skills = skillsRes.data.skills || [];
+  
+  // Resolve skill type IDs to names
+  const skillIds = skills.map((s: any) => s.skill_id);
+  const skillNames = await resolveTypeNames(skillIds);
+  
   let updated = 0;
 
-  // Upsert skills
+  // Upsert skills with resolved names
   for (const skill of skills) {
     const { error } = await supabase.from('member_audit_skills').upsert({
       character_id: characterId,
       skill_id: skill.skill_id,
-      skill_name: `Skill ${skill.skill_id}`, // TODO: resolve name from type_id
+      skill_name: skillNames.get(skill.skill_id) || `Skill ${skill.skill_id}`,
       trained_skill_level: skill.trained_skill_level,
       active_skill_level: skill.active_skill_level,
       skillpoints_in_skill: skill.skillpoints_in_skill,
@@ -189,12 +221,17 @@ async function updateSkillqueue(characterId: number, accessToken: string, supaba
     return { success: false, error: res.error, updated: 0 };
   }
 
+  const queue = res.data;
+  
+  // Resolve skill names
+  const skillIds = queue.map((item: any) => item.skill_id);
+  const skillNames = await resolveTypeNames(skillIds);
+
   // Delete old queue
   await supabase.from('member_audit_skillqueue')
     .delete()
     .eq('character_id', characterId);
 
-  const queue = res.data;
   let updated = 0;
 
   for (const item of queue) {
@@ -202,7 +239,7 @@ async function updateSkillqueue(characterId: number, accessToken: string, supaba
       character_id: characterId,
       queue_position: item.queue_position,
       skill_id: item.skill_id,
-      skill_name: `Skill ${item.skill_id}`,
+      skill_name: skillNames.get(item.skill_id) || `Skill ${item.skill_id}`,
       finished_level: item.finished_level,
       training_start_sp: item.training_start_sp,
       level_start_sp: item.level_start_sp,
@@ -284,13 +321,17 @@ async function updateWallet(characterId: number, accessToken: string, supabase: 
 
   let transactionsUpdated = 0;
   if (!transactionsRes.error && transactionsRes.data) {
+    // Resolve type names
+    const typeIds = [...new Set(transactionsRes.data.map((tx: any) => tx.type_id))] as number[];
+    const typeNames = await resolveTypeNames(typeIds);
+    
     for (const tx of transactionsRes.data) {
       const { error } = await supabase.from('member_audit_wallet_transactions').upsert({
         character_id: characterId,
         transaction_id: tx.transaction_id,
         date: tx.date,
         type_id: tx.type_id,
-        type_name: `Item ${tx.type_id}`,
+        type_name: typeNames.get(tx.type_id) || `Item ${tx.type_id}`,
         quantity: tx.quantity,
         unit_price: tx.unit_price,
         client_id: tx.client_id,
@@ -326,6 +367,9 @@ async function updateImplants(characterId: number, accessToken: string, supabase
     return { success: false, error: res.error, updated: 0 };
   }
 
+  // Resolve implant names
+  const implantNames = await resolveTypeNames(res.data);
+
   // Delete old implants
   await supabase.from('member_audit_implants')
     .delete()
@@ -337,7 +381,7 @@ async function updateImplants(characterId: number, accessToken: string, supabase
     const { error } = await supabase.from('member_audit_implants').insert({
       character_id: characterId,
       implant_id: implantId,
-      implant_name: `Implant ${implantId}`,
+      implant_name: implantNames.get(implantId) || `Implant ${implantId}`,
       slot: i + 1,
     });
 
@@ -404,12 +448,16 @@ async function updateContacts(characterId: number, accessToken: string, supabase
     return { success: false, error: res.error, updated: 0 };
   }
 
+  // Resolve contact names
+  const contactIds = res.data.map((c: any) => c.contact_id);
+  const contactNames = await resolveTypeNames(contactIds);
+
   let updated = 0;
   for (const contact of res.data) {
     const { error } = await supabase.from('member_audit_contacts').upsert({
       character_id: characterId,
       contact_id: contact.contact_id,
-      contact_name: `Contact ${contact.contact_id}`,
+      contact_name: contactNames.get(contact.contact_id) || `Contact ${contact.contact_id}`,
       contact_type: contact.contact_type,
       standing: contact.standing,
       is_watched: contact.is_watched || false,
@@ -441,6 +489,10 @@ async function updateContracts(characterId: number, accessToken: string, supabas
     return { success: false, error: res.error, updated: 0 };
   }
 
+  // Resolve issuer names
+  const issuerIds = [...new Set(res.data.map((c: any) => c.issuer_id))] as number[];
+  const issuerNames = await resolveTypeNames(issuerIds);
+
   let updated = 0;
   for (const contract of res.data) {
     const { error } = await supabase.from('member_audit_contracts').upsert({
@@ -449,7 +501,7 @@ async function updateContracts(characterId: number, accessToken: string, supabas
       type: contract.type,
       status: contract.status,
       issuer_id: contract.issuer_id,
-      issuer_name: `Issuer ${contract.issuer_id}`,
+      issuer_name: issuerNames.get(contract.issuer_id) || `Issuer ${contract.issuer_id}`,
       assignee_id: contract.assignee_id,
       acceptor_id: contract.acceptor_id,
       price: contract.price,
@@ -490,6 +542,14 @@ async function updateIndustry(characterId: number, accessToken: string, supabase
     return { success: false, error: res.error, updated: 0 };
   }
 
+  // Resolve blueprint and product names
+  const typeIds = new Set<number>();
+  res.data.forEach((job: any) => {
+    typeIds.add(job.blueprint_type_id);
+    if (job.product_type_id) typeIds.add(job.product_type_id);
+  });
+  const typeNames = await resolveTypeNames(Array.from(typeIds));
+
   let updated = 0;
   for (const job of res.data) {
     const { error } = await supabase.from('member_audit_industry_jobs').upsert({
@@ -500,10 +560,10 @@ async function updateIndustry(characterId: number, accessToken: string, supabase
       status: job.status,
       blueprint_id: job.blueprint_id,
       blueprint_type_id: job.blueprint_type_id,
-      blueprint_type_name: `Blueprint ${job.blueprint_type_id}`,
+      blueprint_type_name: typeNames.get(job.blueprint_type_id) || `Blueprint ${job.blueprint_type_id}`,
       blueprint_location_id: job.blueprint_location_id,
       product_type_id: job.product_type_id,
-      product_type_name: job.product_type_id ? `Product ${job.product_type_id}` : null,
+      product_type_name: job.product_type_id ? (typeNames.get(job.product_type_id) || `Product ${job.product_type_id}`) : null,
       facility_id: job.facility_id,
       solar_system_id: job.solar_system_id,
       runs: job.runs,
@@ -538,12 +598,16 @@ async function updateLoyalty(characterId: number, accessToken: string, supabase:
     return { success: false, error: res.error, updated: 0 };
   }
 
+  // Resolve corporation names
+  const corpIds = res.data.map((lp: any) => lp.corporation_id);
+  const corpNames = await resolveTypeNames(corpIds);
+
   let updated = 0;
   for (const lp of res.data) {
     const { error } = await supabase.from('member_audit_loyalty_points').upsert({
       character_id: characterId,
       corporation_id: lp.corporation_id,
-      corporation_name: `Corporation ${lp.corporation_id}`,
+      corporation_name: corpNames.get(lp.corporation_id) || `Corporation ${lp.corporation_id}`,
       loyalty_points: lp.loyalty_points,
     }, {
       onConflict: 'character_id,corporation_id',
