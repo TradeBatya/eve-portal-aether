@@ -458,6 +458,696 @@ export type Database = {
         }
         Relationships: []
       }
+      member_audit_clones: {
+        Row: {
+          character_id: number
+          clone_name: string | null
+          created_at: string | null
+          id: string
+          implants: Json | null
+          jump_clone_id: number
+          last_updated: string | null
+          location_id: number
+          location_name: string | null
+          location_type: string | null
+        }
+        Insert: {
+          character_id: number
+          clone_name?: string | null
+          created_at?: string | null
+          id?: string
+          implants?: Json | null
+          jump_clone_id: number
+          last_updated?: string | null
+          location_id: number
+          location_name?: string | null
+          location_type?: string | null
+        }
+        Update: {
+          character_id?: number
+          clone_name?: string | null
+          created_at?: string | null
+          id?: string
+          implants?: Json | null
+          jump_clone_id?: number
+          last_updated?: string | null
+          location_id?: number
+          location_name?: string | null
+          location_type?: string | null
+        }
+        Relationships: []
+      }
+      member_audit_contacts: {
+        Row: {
+          character_id: number
+          contact_id: number
+          contact_name: string
+          contact_type: string
+          created_at: string | null
+          id: string
+          is_blocked: boolean | null
+          is_watched: boolean | null
+          label_ids: Json | null
+          last_updated: string | null
+          standing: number
+        }
+        Insert: {
+          character_id: number
+          contact_id: number
+          contact_name: string
+          contact_type: string
+          created_at?: string | null
+          id?: string
+          is_blocked?: boolean | null
+          is_watched?: boolean | null
+          label_ids?: Json | null
+          last_updated?: string | null
+          standing: number
+        }
+        Update: {
+          character_id?: number
+          contact_id?: number
+          contact_name?: string
+          contact_type?: string
+          created_at?: string | null
+          id?: string
+          is_blocked?: boolean | null
+          is_watched?: boolean | null
+          label_ids?: Json | null
+          last_updated?: string | null
+          standing?: number
+        }
+        Relationships: []
+      }
+      member_audit_contracts: {
+        Row: {
+          acceptor_id: number | null
+          acceptor_name: string | null
+          assignee_id: number | null
+          assignee_name: string | null
+          character_id: number
+          collateral: number | null
+          contract_id: number
+          created_at: string | null
+          date_accepted: string | null
+          date_completed: string | null
+          date_expired: string | null
+          date_issued: string
+          end_location_id: number | null
+          end_location_name: string | null
+          for_corporation: boolean | null
+          id: string
+          issuer_id: number
+          issuer_name: string | null
+          price: number | null
+          reward: number | null
+          start_location_id: number | null
+          start_location_name: string | null
+          status: string
+          title: string | null
+          type: string
+          volume: number | null
+        }
+        Insert: {
+          acceptor_id?: number | null
+          acceptor_name?: string | null
+          assignee_id?: number | null
+          assignee_name?: string | null
+          character_id: number
+          collateral?: number | null
+          contract_id: number
+          created_at?: string | null
+          date_accepted?: string | null
+          date_completed?: string | null
+          date_expired?: string | null
+          date_issued: string
+          end_location_id?: number | null
+          end_location_name?: string | null
+          for_corporation?: boolean | null
+          id?: string
+          issuer_id: number
+          issuer_name?: string | null
+          price?: number | null
+          reward?: number | null
+          start_location_id?: number | null
+          start_location_name?: string | null
+          status: string
+          title?: string | null
+          type: string
+          volume?: number | null
+        }
+        Update: {
+          acceptor_id?: number | null
+          acceptor_name?: string | null
+          assignee_id?: number | null
+          assignee_name?: string | null
+          character_id?: number
+          collateral?: number | null
+          contract_id?: number
+          created_at?: string | null
+          date_accepted?: string | null
+          date_completed?: string | null
+          date_expired?: string | null
+          date_issued?: string
+          end_location_id?: number | null
+          end_location_name?: string | null
+          for_corporation?: boolean | null
+          id?: string
+          issuer_id?: number
+          issuer_name?: string | null
+          price?: number | null
+          reward?: number | null
+          start_location_id?: number | null
+          start_location_name?: string | null
+          status?: string
+          title?: string | null
+          type?: string
+          volume?: number | null
+        }
+        Relationships: []
+      }
+      member_audit_esi_logs: {
+        Row: {
+          character_id: number
+          created_at: string | null
+          endpoint: string
+          error_details: Json | null
+          error_message: string | null
+          id: string
+          method: string
+          request_timestamp: string | null
+          response_time_ms: number | null
+          status_code: number
+        }
+        Insert: {
+          character_id: number
+          created_at?: string | null
+          endpoint: string
+          error_details?: Json | null
+          error_message?: string | null
+          id?: string
+          method?: string
+          request_timestamp?: string | null
+          response_time_ms?: number | null
+          status_code: number
+        }
+        Update: {
+          character_id?: number
+          created_at?: string | null
+          endpoint?: string
+          error_details?: Json | null
+          error_message?: string | null
+          id?: string
+          method?: string
+          request_timestamp?: string | null
+          response_time_ms?: number | null
+          status_code?: number
+        }
+        Relationships: []
+      }
+      member_audit_implants: {
+        Row: {
+          attributes: Json | null
+          character_id: number
+          created_at: string | null
+          id: string
+          implant_id: number
+          implant_name: string
+          last_updated: string | null
+          slot: number
+        }
+        Insert: {
+          attributes?: Json | null
+          character_id: number
+          created_at?: string | null
+          id?: string
+          implant_id: number
+          implant_name: string
+          last_updated?: string | null
+          slot: number
+        }
+        Update: {
+          attributes?: Json | null
+          character_id?: number
+          created_at?: string | null
+          id?: string
+          implant_id?: number
+          implant_name?: string
+          last_updated?: string | null
+          slot?: number
+        }
+        Relationships: []
+      }
+      member_audit_industry_jobs: {
+        Row: {
+          activity_id: number
+          activity_name: string
+          blueprint_id: number
+          blueprint_location_id: number
+          blueprint_type_id: number
+          blueprint_type_name: string
+          character_id: number
+          cost: number | null
+          created_at: string | null
+          end_date: string
+          facility_id: number
+          facility_name: string | null
+          id: string
+          job_id: number
+          licensed_runs: number | null
+          pause_date: string | null
+          product_type_id: number | null
+          product_type_name: string | null
+          runs: number
+          solar_system_id: number | null
+          solar_system_name: string | null
+          start_date: string
+          status: string
+        }
+        Insert: {
+          activity_id: number
+          activity_name: string
+          blueprint_id: number
+          blueprint_location_id: number
+          blueprint_type_id: number
+          blueprint_type_name: string
+          character_id: number
+          cost?: number | null
+          created_at?: string | null
+          end_date: string
+          facility_id: number
+          facility_name?: string | null
+          id?: string
+          job_id: number
+          licensed_runs?: number | null
+          pause_date?: string | null
+          product_type_id?: number | null
+          product_type_name?: string | null
+          runs: number
+          solar_system_id?: number | null
+          solar_system_name?: string | null
+          start_date: string
+          status: string
+        }
+        Update: {
+          activity_id?: number
+          activity_name?: string
+          blueprint_id?: number
+          blueprint_location_id?: number
+          blueprint_type_id?: number
+          blueprint_type_name?: string
+          character_id?: number
+          cost?: number | null
+          created_at?: string | null
+          end_date?: string
+          facility_id?: number
+          facility_name?: string | null
+          id?: string
+          job_id?: number
+          licensed_runs?: number | null
+          pause_date?: string | null
+          product_type_id?: number | null
+          product_type_name?: string | null
+          runs?: number
+          solar_system_id?: number | null
+          solar_system_name?: string | null
+          start_date?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      member_audit_location_cache: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_updated: string | null
+          location_id: number
+          location_name: string
+          location_type: string | null
+          region_id: number | null
+          region_name: string | null
+          solar_system_id: number | null
+          solar_system_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          location_id: number
+          location_name: string
+          location_type?: string | null
+          region_id?: number | null
+          region_name?: string | null
+          solar_system_id?: number | null
+          solar_system_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          location_id?: number
+          location_name?: string
+          location_type?: string | null
+          region_id?: number | null
+          region_name?: string | null
+          solar_system_id?: number | null
+          solar_system_name?: string | null
+        }
+        Relationships: []
+      }
+      member_audit_loyalty_points: {
+        Row: {
+          character_id: number
+          corporation_id: number
+          corporation_name: string
+          created_at: string | null
+          id: string
+          last_updated: string | null
+          loyalty_points: number
+        }
+        Insert: {
+          character_id: number
+          corporation_id: number
+          corporation_name: string
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          loyalty_points: number
+        }
+        Update: {
+          character_id?: number
+          corporation_id?: number
+          corporation_name?: string
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          loyalty_points?: number
+        }
+        Relationships: []
+      }
+      member_audit_mail_headers: {
+        Row: {
+          character_id: number
+          created_at: string | null
+          from_id: number
+          from_name: string | null
+          id: string
+          is_read: boolean | null
+          labels: Json | null
+          mail_id: number
+          recipients: Json | null
+          subject: string
+          timestamp: string
+        }
+        Insert: {
+          character_id: number
+          created_at?: string | null
+          from_id: number
+          from_name?: string | null
+          id?: string
+          is_read?: boolean | null
+          labels?: Json | null
+          mail_id: number
+          recipients?: Json | null
+          subject: string
+          timestamp: string
+        }
+        Update: {
+          character_id?: number
+          created_at?: string | null
+          from_id?: number
+          from_name?: string | null
+          id?: string
+          is_read?: boolean | null
+          labels?: Json | null
+          mail_id?: number
+          recipients?: Json | null
+          subject?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
+      member_audit_metadata: {
+        Row: {
+          character_id: number
+          created_at: string | null
+          enabled_modules: Json | null
+          id: string
+          last_full_sync_at: string | null
+          last_update_at: string | null
+          sync_errors: Json | null
+          sync_progress: Json | null
+          sync_status: string | null
+          total_assets_value: number | null
+          total_sp: number | null
+          unallocated_sp: number | null
+          updated_at: string | null
+          user_id: string
+          wallet_balance: number | null
+        }
+        Insert: {
+          character_id: number
+          created_at?: string | null
+          enabled_modules?: Json | null
+          id?: string
+          last_full_sync_at?: string | null
+          last_update_at?: string | null
+          sync_errors?: Json | null
+          sync_progress?: Json | null
+          sync_status?: string | null
+          total_assets_value?: number | null
+          total_sp?: number | null
+          unallocated_sp?: number | null
+          updated_at?: string | null
+          user_id: string
+          wallet_balance?: number | null
+        }
+        Update: {
+          character_id?: number
+          created_at?: string | null
+          enabled_modules?: Json | null
+          id?: string
+          last_full_sync_at?: string | null
+          last_update_at?: string | null
+          sync_errors?: Json | null
+          sync_progress?: Json | null
+          sync_status?: string | null
+          total_assets_value?: number | null
+          total_sp?: number | null
+          unallocated_sp?: number | null
+          updated_at?: string | null
+          user_id?: string
+          wallet_balance?: number | null
+        }
+        Relationships: []
+      }
+      member_audit_skillqueue: {
+        Row: {
+          character_id: number
+          created_at: string | null
+          finish_date: string | null
+          finished_level: number
+          id: string
+          level_end_sp: number | null
+          level_start_sp: number | null
+          queue_position: number
+          skill_id: number
+          skill_name: string
+          start_date: string | null
+          training_start_sp: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          character_id: number
+          created_at?: string | null
+          finish_date?: string | null
+          finished_level: number
+          id?: string
+          level_end_sp?: number | null
+          level_start_sp?: number | null
+          queue_position: number
+          skill_id: number
+          skill_name: string
+          start_date?: string | null
+          training_start_sp?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          character_id?: number
+          created_at?: string | null
+          finish_date?: string | null
+          finished_level?: number
+          id?: string
+          level_end_sp?: number | null
+          level_start_sp?: number | null
+          queue_position?: number
+          skill_id?: number
+          skill_name?: string
+          start_date?: string | null
+          training_start_sp?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      member_audit_skills: {
+        Row: {
+          active_skill_level: number
+          character_id: number
+          created_at: string | null
+          id: string
+          last_updated: string | null
+          rank: number | null
+          skill_group_id: number | null
+          skill_group_name: string | null
+          skill_id: number
+          skill_name: string
+          skillpoints_in_skill: number
+          trained_skill_level: number
+        }
+        Insert: {
+          active_skill_level: number
+          character_id: number
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          rank?: number | null
+          skill_group_id?: number | null
+          skill_group_name?: string | null
+          skill_id: number
+          skill_name: string
+          skillpoints_in_skill: number
+          trained_skill_level: number
+        }
+        Update: {
+          active_skill_level?: number
+          character_id?: number
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          rank?: number | null
+          skill_group_id?: number | null
+          skill_group_name?: string | null
+          skill_id?: number
+          skill_name?: string
+          skillpoints_in_skill?: number
+          trained_skill_level?: number
+        }
+        Relationships: []
+      }
+      member_audit_wallet_journal: {
+        Row: {
+          amount: number
+          balance: number | null
+          character_id: number
+          created_at: string | null
+          date: string
+          description: string | null
+          first_party_id: number | null
+          first_party_name: string | null
+          first_party_type: string | null
+          id: string
+          journal_id: number
+          reason: string | null
+          ref_type: string
+          second_party_id: number | null
+          second_party_name: string | null
+          second_party_type: string | null
+          tax: number | null
+        }
+        Insert: {
+          amount: number
+          balance?: number | null
+          character_id: number
+          created_at?: string | null
+          date: string
+          description?: string | null
+          first_party_id?: number | null
+          first_party_name?: string | null
+          first_party_type?: string | null
+          id?: string
+          journal_id: number
+          reason?: string | null
+          ref_type: string
+          second_party_id?: number | null
+          second_party_name?: string | null
+          second_party_type?: string | null
+          tax?: number | null
+        }
+        Update: {
+          amount?: number
+          balance?: number | null
+          character_id?: number
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          first_party_id?: number | null
+          first_party_name?: string | null
+          first_party_type?: string | null
+          id?: string
+          journal_id?: number
+          reason?: string | null
+          ref_type?: string
+          second_party_id?: number | null
+          second_party_name?: string | null
+          second_party_type?: string | null
+          tax?: number | null
+        }
+        Relationships: []
+      }
+      member_audit_wallet_transactions: {
+        Row: {
+          character_id: number
+          client_id: number
+          client_name: string | null
+          created_at: string | null
+          date: string
+          id: string
+          is_buy: boolean
+          is_personal: boolean
+          location_id: number
+          location_name: string | null
+          quantity: number
+          transaction_id: number
+          type_id: number
+          type_name: string
+          unit_price: number
+        }
+        Insert: {
+          character_id: number
+          client_id: number
+          client_name?: string | null
+          created_at?: string | null
+          date: string
+          id?: string
+          is_buy: boolean
+          is_personal: boolean
+          location_id: number
+          location_name?: string | null
+          quantity: number
+          transaction_id: number
+          type_id: number
+          type_name: string
+          unit_price: number
+        }
+        Update: {
+          character_id?: number
+          client_id?: number
+          client_name?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          is_buy?: boolean
+          is_personal?: boolean
+          location_id?: number
+          location_name?: string | null
+          quantity?: number
+          transaction_id?: number
+          type_id?: number
+          type_name?: string
+          unit_price?: number
+        }
+        Relationships: []
+      }
       news: {
         Row: {
           category_en: string
