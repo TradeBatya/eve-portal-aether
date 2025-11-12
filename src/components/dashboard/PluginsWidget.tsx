@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plug, Loader2, User, TrendingUp, Wallet, Package } from "lucide-react";
+import { Plug, Loader2, User, TrendingUp, Wallet, Package, ClipboardList } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserPlugins } from "@/hooks/usePlugins";
@@ -7,6 +7,7 @@ import { CharacterOverview } from "@/components/plugins/CharacterOverview";
 import { SkillMonitor } from "@/components/plugins/SkillMonitor";
 import { WalletTracker } from "@/components/plugins/WalletTracker";
 import { AssetManager } from "@/components/plugins/AssetManager";
+import { MemberAudit } from "@/components/plugins/MemberAudit";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -41,6 +42,8 @@ export const PluginsWidget = () => {
         return <WalletTracker key={pluginId} />;
       case 'asset-manager':
         return <AssetManager key={pluginId} />;
+      case 'member-audit':
+        return <MemberAudit key={pluginId} />;
       default:
         return null;
     }
@@ -56,6 +59,8 @@ export const PluginsWidget = () => {
         return <Wallet className="w-5 h-5" />;
       case 'asset-manager':
         return <Package className="w-5 h-5" />;
+      case 'member-audit':
+        return <ClipboardList className="w-5 h-5" />;
       default:
         return <Plug className="w-5 h-5" />;
     }

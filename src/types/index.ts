@@ -118,3 +118,6 @@ export interface UserPlugin {
   installed_at: string;
   plugins?: Plugin;  // For joined queries
 }
+
+// Re-export Member Audit types
+export * from './memberaudit';

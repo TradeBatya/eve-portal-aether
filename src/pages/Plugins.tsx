@@ -3,7 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { SideNav } from "@/components/SideNav";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, Plug, Loader2, User, TrendingUp, Wallet, Package } from "lucide-react";
+import { Menu, Plug, Loader2, User, TrendingUp, Wallet, Package, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +54,8 @@ const Plugins = () => {
         return <Wallet className="w-5 h-5" />;
       case 'asset-manager':
         return <Package className="w-5 h-5" />;
+      case 'member-audit':
+        return <ClipboardList className="w-5 h-5" />;
       default:
         return <Plug className="w-5 h-5" />;
     }
