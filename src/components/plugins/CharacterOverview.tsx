@@ -1,15 +1,23 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { User, Building, Shield, Loader2 } from "lucide-react";
+import { User, Building, Shield, Loader2, MapPin, Ship, Coins, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { esiService } from "@/services/esiService";
+import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatDistanceToNow } from "date-fns";
 
 export const CharacterOverview = () => {
   const { user } = useAuth();
   const { language } = useLanguage();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: characters, isLoading } = useQuery({
     queryKey: ['eve-characters', user?.id],
@@ -48,6 +56,36 @@ export const CharacterOverview = () => {
     enabled: !!mainCharacter?.character_id,
   });
 
+  const handleRefresh = async () => {
+    if (!mainCharacter) return;
+    
+    setIsRefreshing(true);
+    try {
+      await esiService.refreshCharacterData(mainCharacter.character_id);
+      await queryClient.invalidateQueries({ queryKey: ['member-audit-metadata'] });
+      toast({
+        title: language === 'en' ? 'Success' : 'Успешно',
+        description: language === 'en' 
+          ? 'Character data refreshed successfully' 
+          : 'Данные персонажа успешно обновлены',
+      });
+    } catch (error) {
+      toast({
+        title: language === 'en' ? 'Error' : 'Ошибка',
+        description: language === 'en' 
+          ? 'Failed to refresh character data' 
+          : 'Не удалось обновить данные персонажа',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const cacheStatus = metadata?.last_update_at 
+    ? esiService.getCacheStatus(metadata.last_update_at)
+    : { isStale: true, ageMinutes: Infinity };
+
   const t = {
     en: {
       title: "Character Overview",
@@ -59,6 +97,10 @@ export const CharacterOverview = () => {
       location: "Location",
       ship: "Current Ship",
       noCharacters: "No characters linked. Please link your EVE character.",
+      refresh: "Refresh",
+      lastSync: "Last sync",
+      minutesAgo: "min ago",
+      never: "Never",
     },
     ru: {
       title: "Обзор персонажа",
@@ -70,6 +112,10 @@ export const CharacterOverview = () => {
       location: "Локация",
       ship: "Текущий корабль",
       noCharacters: "Нет привязанных персонажей. Пожалуйста, привяжите персонажа EVE.",
+      refresh: "Обновить",
+      lastSync: "Последняя синхронизация",
+      minutesAgo: "мин назад",
+      never: "Никогда",
     },
   }[language];
 
@@ -96,10 +142,21 @@ export const CharacterOverview = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="w-5 h-5" />
-          {t.title}
-        </CardTitle>
+        <div className="flex justify-between items-start">
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5" />
+            {t.title}
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {t.refresh}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Main Character */}
@@ -145,30 +202,55 @@ export const CharacterOverview = () => {
               </div>
             </div>
           )}
-          {metadata?.wallet_balance !== null && (
-            <div className="p-3 rounded-lg bg-muted/50">
-              <div className="text-xs text-muted-foreground mb-1">{t.wallet}</div>
-              <div className="font-semibold">
-                {Number(metadata?.wallet_balance || 0).toLocaleString()} ISK
-              </div>
+          <div className="p-3 rounded-lg bg-muted/50">
+            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+              <Coins className="w-3 h-3" />
+              {t.wallet}
             </div>
-          )}
-          {mainCharacter.location_system_name && (
-            <div className="p-3 rounded-lg bg-muted/50">
-              <div className="text-xs text-muted-foreground mb-1">{t.location}</div>
-              <div className="font-semibold text-sm">
-                {mainCharacter.location_system_name}
-              </div>
+            <div className="font-semibold">
+              {!metadata?.wallet_balance ? (
+                <Skeleton className="h-4 w-24" />
+              ) : (
+                `${Number(metadata.wallet_balance).toLocaleString()} ISK`
+              )}
             </div>
-          )}
-          {mainCharacter.ship_type_name && (
-            <div className="p-3 rounded-lg bg-muted/50">
-              <div className="text-xs text-muted-foreground mb-1">{t.ship}</div>
-              <div className="font-semibold text-sm">
-                {mainCharacter.ship_type_name}
-              </div>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/50">
+            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              {t.location}
             </div>
-          )}
+            <div className="font-semibold text-sm">
+              {!metadata?.location_name ? (
+                <Skeleton className="h-4 w-32" />
+              ) : (
+                metadata.location_name
+              )}
+            </div>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/50">
+            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+              <Ship className="w-3 h-3" />
+              {t.ship}
+            </div>
+            <div className="font-semibold text-sm">
+              {!metadata?.ship_type_name ? (
+                <Skeleton className="h-4 w-24" />
+              ) : (
+                metadata.ship_type_name
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Sync Status */}
+        <div className="flex items-center justify-between text-xs border-t pt-3">
+          <span className="text-muted-foreground">{t.lastSync}:</span>
+          <span className={`font-medium ${cacheStatus.isStale ? 'text-yellow-500' : 'text-green-500'}`}>
+            {metadata?.last_update_at 
+              ? formatDistanceToNow(new Date(metadata.last_update_at), { addSuffix: true })
+              : t.never}
+          </span>
         </div>
 
         {/* All Characters */}

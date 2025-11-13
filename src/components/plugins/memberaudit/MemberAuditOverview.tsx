@@ -1,7 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Brain, Coins, Package, Calendar } from 'lucide-react';
+import { Brain, Coins, Package, Calendar, MapPin, Ship, RefreshCw, AlertCircle } from 'lucide-react';
 import { MemberAuditMetadata } from '@/types/memberaudit';
 import { formatDistanceToNow } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { esiService } from '@/services/esiService';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface MemberAuditOverviewProps {
   characterId: number | null;
@@ -10,6 +16,9 @@ interface MemberAuditOverviewProps {
 }
 
 export const MemberAuditOverview = ({ characterId, character, metadata }: MemberAuditOverviewProps) => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const queryClient = useQueryClient();
+
   if (!characterId || !character) {
     return (
       <Card>
@@ -19,6 +28,30 @@ export const MemberAuditOverview = ({ characterId, character, metadata }: Member
       </Card>
     );
   }
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await esiService.refreshCharacterData(characterId);
+      await queryClient.invalidateQueries({ queryKey: ['member-audit-metadata'] });
+      toast({
+        title: 'Success',
+        description: 'Character data refreshed successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh character data',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const cacheStatus = metadata?.last_update_at 
+    ? esiService.getCacheStatus(metadata.last_update_at)
+    : { isStale: true, ageMinutes: Infinity };
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat('en-US').format(num);
@@ -40,38 +73,68 @@ export const MemberAuditOverview = ({ characterId, character, metadata }: Member
       {/* Character Info */}
       <Card>
         <CardHeader>
-          <CardTitle>{character.character_name}</CardTitle>
-          <CardDescription>
-            {character.corporation_name}
-            {character.alliance_name && ` • ${character.alliance_name}`}
-          </CardDescription>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                {character.character_name}
+                {cacheStatus.isStale && (
+                  <AlertCircle className="h-4 w-4 text-yellow-500" />
+                )}
+              </CardTitle>
+              <CardDescription>
+                {character.corporation_name}
+                {character.alliance_name && ` • ${character.alliance_name}`}
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">Security Status:</span>
-              <span className="ml-2 font-medium">{character.security_status?.toFixed(2) || 'N/A'}</span>
+              <span className="ml-2 font-medium">
+                {character.security_status?.toFixed(2) || 'N/A'}
+              </span>
             </div>
-            <div>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Location:</span>
               <span className="ml-2 font-medium">
-                {metadata?.location_name || metadata?.solar_system_name || character.location_system_name || 'Unknown'}
+                {!metadata?.location_name ? (
+                  <Skeleton className="h-4 w-32" />
+                ) : (
+                  metadata.location_name
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Ship className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Ship:</span>
+              <span className="ml-2 font-medium">
+                {!metadata?.ship_type_name ? (
+                  <Skeleton className="h-4 w-24" />
+                ) : (
+                  metadata.ship_type_name
+                )}
               </span>
             </div>
             <div>
-              <span className="text-muted-foreground">Ship:</span>
-              <span className="ml-2 font-medium">
-                {metadata?.ship_type_name || character.ship_type_name || 'Unknown'}
+              <span className="text-muted-foreground">Last Sync:</span>
+              <span className={`ml-2 font-medium ${cacheStatus.isStale ? 'text-yellow-500' : 'text-green-500'}`}>
+                {metadata?.last_update_at 
+                  ? formatDistanceToNow(new Date(metadata.last_update_at), { addSuffix: true })
+                  : 'Never'}
               </span>
             </div>
-            {metadata?.last_full_sync_at && (
-              <div>
-                <span className="text-muted-foreground">Last Sync:</span>
-                <span className="ml-2 font-medium">
-                  {formatDistanceToNow(new Date(metadata.last_full_sync_at), { addSuffix: true })}
-                </span>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
