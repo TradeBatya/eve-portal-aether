@@ -711,6 +711,76 @@ Deno.serve(async (req) => {
     const progress: Record<string, number> = {};
     const errors: string[] = [];
 
+    // Get location data
+    let locationData: any = {};
+    try {
+      const locationResponse: any = await fetchESI(`/characters/${character_id}/location/`, accessToken, character_id, supabase);
+      if (locationResponse) {
+        locationData = {
+          location_id: locationResponse.station_id || locationResponse.structure_id || locationResponse.solar_system_id,
+          location_type: locationResponse.station_id ? 'station' : locationResponse.structure_id ? 'structure' : 'solar_system',
+          solar_system_id: locationResponse.solar_system_id,
+        };
+
+        // Resolve solar system name
+        if (locationResponse.solar_system_id) {
+          const sysNameResponse = await fetch('https://esi.evetech.net/latest/universe/names/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify([locationResponse.solar_system_id]),
+          });
+          if (sysNameResponse.ok) {
+            const sysNames = await sysNameResponse.json();
+            if (sysNames.length > 0) {
+              locationData.solar_system_name = sysNames[0].name;
+            }
+          }
+        }
+
+        // Resolve location name (skip structures for now)
+        if (locationData.location_id && locationData.location_type !== 'structure') {
+          const locNameResponse = await fetch('https://esi.evetech.net/latest/universe/names/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify([locationData.location_id]),
+          });
+          if (locNameResponse.ok) {
+            const locNames = await locNameResponse.json();
+            if (locNames.length > 0) {
+              locationData.location_name = locNames[0].name;
+            }
+          }
+        } else if (locationData.location_type === 'structure') {
+          locationData.location_name = `Structure ${locationData.location_id}`;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching location:', error);
+    }
+
+    // Get ship data
+    let shipData: any = {};
+    try {
+      const shipResponse: any = await fetchESI(`/characters/${character_id}/ship/`, accessToken, character_id, supabase);
+      if (shipResponse) {
+        shipData = {
+          ship_type_id: shipResponse.ship_type_id,
+          ship_name: shipResponse.ship_name,
+        };
+
+        // Resolve ship type name
+        if (shipResponse.ship_type_id) {
+          const shipTypeResponse = await fetch(`https://esi.evetech.net/latest/universe/types/${shipResponse.ship_type_id}/`);
+          if (shipTypeResponse.ok) {
+            const shipType = await shipTypeResponse.json();
+            shipData.ship_type_name = shipType.name;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching ship:', error);
+    }
+
     const moduleHandlers: Record<string, Function> = {
       skills: updateSkills,
       skillqueue: updateSkillqueue,
@@ -752,6 +822,8 @@ Deno.serve(async (req) => {
       sync_status: errors.length > 0 ? 'failed' : 'completed',
       sync_progress: progress,
       sync_errors: errors,
+      ...locationData,
+      ...shipData,
       last_full_sync_at: new Date().toISOString(),
       last_update_at: new Date().toISOString(),
     }).eq('character_id', character_id);

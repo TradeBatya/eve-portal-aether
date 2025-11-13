@@ -895,6 +895,14 @@ export type Database = {
           id: string
           last_full_sync_at: string | null
           last_update_at: string | null
+          location_id: number | null
+          location_name: string | null
+          location_type: string | null
+          ship_name: string | null
+          ship_type_id: number | null
+          ship_type_name: string | null
+          solar_system_id: number | null
+          solar_system_name: string | null
           sync_errors: Json | null
           sync_progress: Json | null
           sync_status: string | null
@@ -912,6 +920,14 @@ export type Database = {
           id?: string
           last_full_sync_at?: string | null
           last_update_at?: string | null
+          location_id?: number | null
+          location_name?: string | null
+          location_type?: string | null
+          ship_name?: string | null
+          ship_type_id?: number | null
+          ship_type_name?: string | null
+          solar_system_id?: number | null
+          solar_system_name?: string | null
           sync_errors?: Json | null
           sync_progress?: Json | null
           sync_status?: string | null
@@ -929,6 +945,14 @@ export type Database = {
           id?: string
           last_full_sync_at?: string | null
           last_update_at?: string | null
+          location_id?: number | null
+          location_name?: string | null
+          location_type?: string | null
+          ship_name?: string | null
+          ship_type_id?: number | null
+          ship_type_name?: string | null
+          solar_system_id?: number | null
+          solar_system_name?: string | null
           sync_errors?: Json | null
           sync_progress?: Json | null
           sync_status?: string | null
@@ -1031,6 +1055,27 @@ export type Database = {
           skill_name?: string
           skillpoints_in_skill?: number
           trained_skill_level?: number
+        }
+        Relationships: []
+      }
+      member_audit_universe_names: {
+        Row: {
+          category: string
+          id: number
+          last_updated: string | null
+          name: string
+        }
+        Insert: {
+          category: string
+          id: number
+          last_updated?: string | null
+          name: string
+        }
+        Update: {
+          category?: string
+          id?: number
+          last_updated?: string | null
+          name?: string
         }
         Relationships: []
       }

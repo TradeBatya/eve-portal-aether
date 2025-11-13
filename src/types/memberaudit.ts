@@ -14,6 +14,14 @@ export interface MemberAuditMetadata {
   unallocated_sp: number;
   total_assets_value: number;
   wallet_balance: number;
+  location_id?: number;
+  location_name?: string;
+  location_type?: string;
+  solar_system_id?: number;
+  solar_system_name?: string;
+  ship_type_id?: number;
+  ship_type_name?: string;
+  ship_name?: string;
   created_at: string;
   updated_at: string;
 }

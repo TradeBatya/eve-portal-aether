@@ -54,11 +54,15 @@ export const MemberAuditOverview = ({ characterId, character, metadata }: Member
             </div>
             <div>
               <span className="text-muted-foreground">Location:</span>
-              <span className="ml-2 font-medium">{character.location_system_name || 'Unknown'}</span>
+              <span className="ml-2 font-medium">
+                {metadata?.location_name || metadata?.solar_system_name || character.location_system_name || 'Unknown'}
+              </span>
             </div>
             <div>
               <span className="text-muted-foreground">Ship:</span>
-              <span className="ml-2 font-medium">{character.ship_type_name || 'Unknown'}</span>
+              <span className="ml-2 font-medium">
+                {metadata?.ship_type_name || character.ship_type_name || 'Unknown'}
+              </span>
             </div>
             {metadata?.last_full_sync_at && (
               <div>

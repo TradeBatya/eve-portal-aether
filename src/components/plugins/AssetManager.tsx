@@ -85,6 +85,17 @@ export const AssetManager = () => {
   }, [assetsData]);
 
   const { data: locationNames } = useUniverseNames(locationIds);
+  
+  // Create location name map
+  const locationNameMap = useMemo(() => {
+    const map = new Map<number, string>();
+    if (locationNames) {
+      for (const item of locationNames) {
+        map.set(item.id, item.name);
+      }
+    }
+    return map;
+  }, [locationNames]);
   const { data: typeNames } = useUniverseNames(typeIds);
 
   // Group assets by location
