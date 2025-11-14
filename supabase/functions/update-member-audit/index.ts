@@ -711,6 +711,18 @@ Deno.serve(async (req) => {
     const progress: Record<string, number> = {};
     const errors: string[] = [];
 
+    // Get basic character info (security_status)
+    let securityStatus = null;
+    try {
+      const charInfoResponse = await fetchESI(`/characters/${character_id}/`, '', character_id, supabase);
+      if (charInfoResponse.data) {
+        securityStatus = charInfoResponse.data.security_status;
+        console.log(`Security status: ${securityStatus}`);
+      }
+    } catch (error) {
+      console.error('Error fetching character info:', error);
+    }
+
     // Get location data
     let locationData: any = {};
     try {
@@ -819,8 +831,35 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Calculate total assets value from character_assets
+    let totalAssetsValue = 0;
+    try {
+      const { data: assets } = await supabase
+        .from('character_assets')
+        .select('estimated_value, quantity')
+        .eq('character_id', character_id);
+      
+      if (assets) {
+        totalAssetsValue = assets.reduce((sum: number, asset: any) => {
+          return sum + (asset.estimated_value || 0) * (asset.quantity || 1);
+        }, 0);
+        console.log(`Calculated total assets value: ${totalAssetsValue}`);
+      }
+    } catch (error) {
+      console.error('Error calculating assets value:', error);
+    }
+
+    // Get current metadata values for SP and wallet (updated by modules)
+    const { data: currentMetadata } = await supabase
+      .from('member_audit_metadata')
+      .select('total_sp, unallocated_sp, wallet_balance')
+      .eq('character_id', character_id)
+      .single();
+
     // Update final metadata
     await supabase.from('member_audit_metadata').update({
+      security_status: securityStatus,
+      total_assets_value: totalAssetsValue,
       sync_status: errors.length > 0 ? 'failed' : 'completed',
       sync_progress: progress,
       sync_errors: errors,

@@ -102,7 +102,9 @@ export const MemberAuditOverview = ({ characterId, character, metadata }: Member
             <div>
               <span className="text-muted-foreground">Security Status:</span>
               <span className="ml-2 font-medium">
-                {character.security_status?.toFixed(2) || 'N/A'}
+                {metadata?.security_status !== undefined && metadata?.security_status !== null
+                  ? metadata.security_status.toFixed(2)
+                  : 'N/A'}
               </span>
             </div>
             <div className="flex items-center gap-2">
