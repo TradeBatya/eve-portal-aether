@@ -714,20 +714,21 @@ Deno.serve(async (req) => {
     // Get location data
     let locationData: any = {};
     try {
-      const locationResponse: any = await fetchESI(`/characters/${character_id}/location/`, accessToken, character_id, supabase);
-      if (locationResponse) {
+      const locationResponse = await fetchESI(`/characters/${character_id}/location/`, accessToken, character_id, supabase);
+      if (locationResponse.data) {
+        const locData = locationResponse.data;
         locationData = {
-          location_id: locationResponse.station_id || locationResponse.structure_id || locationResponse.solar_system_id,
-          location_type: locationResponse.station_id ? 'station' : locationResponse.structure_id ? 'structure' : 'solar_system',
-          solar_system_id: locationResponse.solar_system_id,
+          location_id: locData.station_id || locData.structure_id || locData.solar_system_id,
+          location_type: locData.station_id ? 'station' : locData.structure_id ? 'structure' : 'solar_system',
+          solar_system_id: locData.solar_system_id,
         };
 
         // Resolve solar system name
-        if (locationResponse.solar_system_id) {
+        if (locData.solar_system_id) {
           const sysNameResponse = await fetch('https://esi.evetech.net/latest/universe/names/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify([locationResponse.solar_system_id]),
+            body: JSON.stringify([locData.solar_system_id]),
           });
           if (sysNameResponse.ok) {
             const sysNames = await sysNameResponse.json();
@@ -761,16 +762,17 @@ Deno.serve(async (req) => {
     // Get ship data
     let shipData: any = {};
     try {
-      const shipResponse: any = await fetchESI(`/characters/${character_id}/ship/`, accessToken, character_id, supabase);
-      if (shipResponse) {
+      const shipResponse = await fetchESI(`/characters/${character_id}/ship/`, accessToken, character_id, supabase);
+      if (shipResponse.data) {
+        const shipInfo = shipResponse.data;
         shipData = {
-          ship_type_id: shipResponse.ship_type_id,
-          ship_name: shipResponse.ship_name,
+          ship_type_id: shipInfo.ship_type_id,
+          ship_name: shipInfo.ship_name,
         };
 
         // Resolve ship type name
-        if (shipResponse.ship_type_id) {
-          const shipTypeResponse = await fetch(`https://esi.evetech.net/latest/universe/types/${shipResponse.ship_type_id}/`);
+        if (shipInfo.ship_type_id) {
+          const shipTypeResponse = await fetch(`https://esi.evetech.net/latest/universe/types/${shipInfo.ship_type_id}/`);
           if (shipTypeResponse.ok) {
             const shipType = await shipTypeResponse.json();
             shipData.ship_type_name = shipType.name;

@@ -212,7 +212,7 @@ class EsiService {
   async refreshCharacterData(characterId: number): Promise<void> {
     try {
       await supabase.functions.invoke('update-member-audit', {
-        body: { characterId }
+        body: { character_id: characterId }
       });
     } catch (error) {
       console.error('Failed to refresh character data:', error);
