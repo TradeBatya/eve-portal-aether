@@ -269,6 +269,132 @@ export type Database = {
         }
         Relationships: []
       }
+      esi_service_cache: {
+        Row: {
+          cache_key: string
+          character_id: number | null
+          created_at: string | null
+          data: Json
+          endpoint: string
+          expires_at: string
+          id: number
+          last_accessed: string | null
+        }
+        Insert: {
+          cache_key: string
+          character_id?: number | null
+          created_at?: string | null
+          data: Json
+          endpoint: string
+          expires_at: string
+          id?: number
+          last_accessed?: string | null
+        }
+        Update: {
+          cache_key?: string
+          character_id?: number | null
+          created_at?: string | null
+          data?: Json
+          endpoint?: string
+          expires_at?: string
+          id?: number
+          last_accessed?: string | null
+        }
+        Relationships: []
+      }
+      esi_service_request_logs: {
+        Row: {
+          accessed_at: string | null
+          character_id: number | null
+          endpoint: string
+          error_message: string | null
+          id: number
+          method: string | null
+          response_time_ms: number | null
+          status_code: number | null
+          user_agent: string | null
+        }
+        Insert: {
+          accessed_at?: string | null
+          character_id?: number | null
+          endpoint: string
+          error_message?: string | null
+          id?: number
+          method?: string | null
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_agent?: string | null
+        }
+        Update: {
+          accessed_at?: string | null
+          character_id?: number | null
+          endpoint?: string
+          error_message?: string | null
+          id?: number
+          method?: string | null
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      esi_service_tokens: {
+        Row: {
+          access_token: string
+          character_id: number
+          created_at: string | null
+          expires_at: string
+          refresh_token: string
+          scopes: string[]
+          token_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_token: string
+          character_id: number
+          created_at?: string | null
+          expires_at: string
+          refresh_token: string
+          scopes: string[]
+          token_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string
+          character_id?: number
+          created_at?: string | null
+          expires_at?: string
+          refresh_token?: string
+          scopes?: string[]
+          token_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      esi_service_universe_names: {
+        Row: {
+          category: string
+          created_at: string | null
+          expires_at: string
+          id: number
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          expires_at: string
+          id: number
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
       eve_characters: {
         Row: {
           access_token: string
@@ -898,6 +1024,7 @@ export type Database = {
           location_id: number | null
           location_name: string | null
           location_type: string | null
+          security_status: number | null
           ship_name: string | null
           ship_type_id: number | null
           ship_type_name: string | null
@@ -923,6 +1050,7 @@ export type Database = {
           location_id?: number | null
           location_name?: string | null
           location_type?: string | null
+          security_status?: number | null
           ship_name?: string | null
           ship_type_id?: number | null
           ship_type_name?: string | null
@@ -948,6 +1076,7 @@ export type Database = {
           location_id?: number | null
           location_name?: string | null
           location_type?: string | null
+          security_status?: number | null
           ship_name?: string | null
           ship_type_id?: number | null
           ship_type_name?: string | null
@@ -1599,6 +1728,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_esi_cache: { Args: never; Returns: undefined }
       get_user_permissions: { Args: { user_uuid: string }; Returns: Json }
       has_permission: {
         Args: { permission_name: string; user_uuid: string }
