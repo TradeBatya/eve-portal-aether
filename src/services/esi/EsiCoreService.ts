@@ -225,8 +225,21 @@ class EsiCoreService {
     const resultMap = new Map<number, string>();
     const missingIds: number[] = [];
 
+    // Validate and filter IDs
+    const validIds = ids.filter(id => {
+      if (!id || id <= 0 || !Number.isInteger(id)) {
+        console.warn(`Invalid ID filtered out: ${id}`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validIds.length === 0) {
+      return resultMap;
+    }
+
     // Check cache for each ID
-    for (const id of ids) {
+    for (const id of validIds) {
       const cachedName = await this.getCachedName(id);
       if (cachedName) {
         resultMap.set(id, cachedName);
@@ -235,25 +248,40 @@ class EsiCoreService {
       }
     }
 
-    // Request missing IDs from ESI
+    // Request missing IDs from ESI (batch in chunks of 1000)
     if (missingIds.length > 0) {
-      try {
-        const response = await this.request<Array<{id: number; name: string; category: string}>>(
-          '/universe/names/', 
-          {
-            method: 'POST',
-            body: missingIds,
-            useCache: false
-          }
-        );
+      const BATCH_SIZE = 1000;
+      const batches = [];
+      
+      for (let i = 0; i < missingIds.length; i += BATCH_SIZE) {
+        batches.push(missingIds.slice(i, i + BATCH_SIZE));
+      }
 
-        // Cache results
-        for (const item of response.data) {
-          resultMap.set(item.id, item.name);
-          await this.cacheName(item.id, item.name, item.category);
+      for (const batch of batches) {
+        try {
+          const response = await this.request<Array<{id: number; name: string; category: string}>>(
+            '/universe/names/', 
+            {
+              method: 'POST',
+              body: batch,
+              useCache: true,
+              ttl: 30 * 24 * 60 * 60 // 30 days
+            }
+          );
+
+          // Cache results
+          if (Array.isArray(response.data)) {
+            for (const item of response.data) {
+              if (item && item.id && item.name) {
+                resultMap.set(item.id, item.name);
+                await this.cacheName(item.id, item.name, item.category || 'unknown');
+              }
+            }
+          }
+        } catch (error: any) {
+          console.error(`Bulk resolve failed for batch: ${error.message}`);
+          // Continue with next batch
         }
-      } catch (error) {
-        console.warn('Bulk resolve partially failed:', error);
       }
     }
 

@@ -182,13 +182,18 @@ async function fetchEsi(
   accessToken: string | null,
   userAgent: string
 ): Promise<{ data: any; status: number; headers: Record<string, string> }> {
+  // Ensure endpoint starts with /
+  if (!endpoint.startsWith('/')) {
+    endpoint = '/' + endpoint;
+  }
+  
   const url = `${ESI_BASE_URL}${endpoint}`;
   
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     'User-Agent': userAgent || 'EVE Portal Aether/3.0'
   };
 
+  // Add authorization if token provided
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
@@ -198,9 +203,30 @@ async function fetchEsi(
     headers
   };
 
+  // Handle POST/PUT body
   if (body && (method === 'POST' || method === 'PUT')) {
+    // Validate body for bulk operations
+    if (endpoint.includes('/universe/names/')) {
+      if (!Array.isArray(body)) {
+        throw new Error('Body must be an array for /universe/names/');
+      }
+      if (body.length === 0) {
+        throw new Error('Body array cannot be empty');
+      }
+      if (body.length > 1000) {
+        throw new Error('Body array cannot exceed 1000 items');
+      }
+      // Validate all items are numbers
+      if (!body.every(id => typeof id === 'number' && id > 0)) {
+        throw new Error('All items must be positive numbers');
+      }
+    }
+    
+    headers['Content-Type'] = 'application/json';
     options.body = JSON.stringify(body);
   }
+
+  console.log(`ESI Request: ${method} ${url}`, body ? `(${Array.isArray(body) ? body.length : 1} items)` : '');
 
   const response = await fetch(url, options);
   
@@ -211,18 +237,45 @@ async function fetchEsi(
 
   let data;
   const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    data = await response.json();
-  } else {
-    data = await response.text();
+  
+  try {
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = await response.text();
+    }
+  } catch (parseError: any) {
+    console.error('Failed to parse ESI response:', parseError);
+    throw new Error(`Failed to parse ESI response: ${parseError?.message || 'Unknown error'}`);
   }
 
   if (!response.ok) {
-    const error: any = new Error(`ESI returned ${response.status}: ${response.statusText}`);
+    console.error(`ESI Error ${response.status}:`, data);
+    
+    const error: any = new Error(
+      `ESI returned ${response.status}: ${response.statusText}`
+    );
     error.statusCode = response.status;
     error.data = data;
+    error.endpoint = endpoint;
+    
+    // Add specific error messages for common issues
+    if (response.status === 400) {
+      error.message = `Bad Request to ${endpoint}: ${JSON.stringify(data)}`;
+    } else if (response.status === 401) {
+      error.message = `Unauthorized access to ${endpoint} - token may be expired`;
+    } else if (response.status === 403) {
+      error.message = `Forbidden - insufficient scopes for ${endpoint}`;
+    } else if (response.status === 404) {
+      error.message = `Resource not found: ${endpoint}`;
+    } else if (response.status === 420) {
+      error.message = `Rate limited - too many requests`;
+    }
+    
     throw error;
   }
+
+  console.log(`ESI Success: ${method} ${url} (${response.status})`);
 
   return {
     data,
