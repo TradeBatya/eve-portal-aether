@@ -229,21 +229,13 @@ class EsiCoreService {
     const INT32_MAX = 2147483647;
     const INT32_MIN = -2147483648;
 
-    // Validate and filter IDs
+    // Validate and filter IDs (silently - warnings already at collection stage)
     const validIds = ids.filter(id => {
-      if (!id || !Number.isInteger(id)) {
-        console.warn(`Invalid ID filtered out (not integer): ${id}`);
-        return false;
-      }
-      if (id < INT32_MIN || id > INT32_MAX) {
-        console.warn(`Invalid ID filtered out (exceeds int32): ${id}`);
-        return false;
-      }
-      if (id <= 0) {
-        console.warn(`Invalid ID filtered out (non-positive): ${id}`);
-        return false;
-      }
-      return true;
+      return id && 
+             Number.isInteger(id) && 
+             id > 0 && 
+             id >= INT32_MIN && 
+             id <= INT32_MAX;
     });
 
     if (validIds.length === 0) {
@@ -474,12 +466,28 @@ class EsiCoreService {
   }
 
   private collectIdsForResolution(data: any, idsSet: Set<number>): void {
+    // Only resolve specific ID types that work with /universe/names/
+    const resolvableFields = [
+      'character_id', 'corporation_id', 'alliance_id', 
+      'solar_system_id', 'type_id', 'region_id', 'constellation_id',
+      'station_id', 'faction_id', 'agent_id'
+    ];
+    
+    // Skip item_id, location_id (int64), parent_item_id
+    const skipFields = ['item_id', 'location_id', 'parent_item_id', 'blueprint_id'];
+    
     if (Array.isArray(data)) {
       data.forEach(item => this.collectIdsForResolution(item, idsSet));
     } else if (data && typeof data === 'object') {
       for (const [key, value] of Object.entries(data)) {
         if (key.endsWith('_id') && typeof value === 'number' && value > 0) {
-          idsSet.add(value);
+          // Skip if field is in skip list
+          if (skipFields.includes(key)) continue;
+          
+          // Only add if valid int32 and in resolvable list
+          if (value <= 2147483647 && (resolvableFields.includes(key) || key.endsWith('_type_id'))) {
+            idsSet.add(value);
+          }
         } else if (value && typeof value === 'object') {
           this.collectIdsForResolution(value, idsSet);
         }
