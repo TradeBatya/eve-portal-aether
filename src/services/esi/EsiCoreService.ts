@@ -225,10 +225,22 @@ class EsiCoreService {
     const resultMap = new Map<number, string>();
     const missingIds: number[] = [];
 
+    // ESI int32 limits: -2,147,483,648 to 2,147,483,647
+    const INT32_MAX = 2147483647;
+    const INT32_MIN = -2147483648;
+
     // Validate and filter IDs
     const validIds = ids.filter(id => {
-      if (!id || id <= 0 || !Number.isInteger(id)) {
-        console.warn(`Invalid ID filtered out: ${id}`);
+      if (!id || !Number.isInteger(id)) {
+        console.warn(`Invalid ID filtered out (not integer): ${id}`);
+        return false;
+      }
+      if (id < INT32_MIN || id > INT32_MAX) {
+        console.warn(`Invalid ID filtered out (exceeds int32): ${id}`);
+        return false;
+      }
+      if (id <= 0) {
+        console.warn(`Invalid ID filtered out (non-positive): ${id}`);
         return false;
       }
       return true;

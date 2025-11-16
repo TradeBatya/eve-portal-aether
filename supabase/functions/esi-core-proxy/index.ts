@@ -216,9 +216,22 @@ async function fetchEsi(
       if (body.length > 1000) {
         throw new Error('Body array cannot exceed 1000 items');
       }
-      // Validate all items are numbers
-      if (!body.every(id => typeof id === 'number' && id > 0)) {
-        throw new Error('All items must be positive numbers');
+      
+      // ESI int32 limits
+      const INT32_MAX = 2147483647;
+      const INT32_MIN = -2147483648;
+      
+      // Validate all items are valid int32 numbers
+      const invalidIds = body.filter(id => 
+        typeof id !== 'number' || 
+        !Number.isInteger(id) || 
+        id <= 0 || 
+        id < INT32_MIN || 
+        id > INT32_MAX
+      );
+      
+      if (invalidIds.length > 0) {
+        throw new Error(`Invalid IDs detected (must be positive int32): ${invalidIds.slice(0, 5).join(', ')}${invalidIds.length > 5 ? '...' : ''}`);
       }
     }
     
