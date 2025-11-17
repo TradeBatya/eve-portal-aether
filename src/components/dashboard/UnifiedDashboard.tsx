@@ -11,6 +11,7 @@ import { AssetManager } from '@/components/plugins/AssetManager';
 import { MemberAudit } from '@/components/plugins/MemberAudit';
 import { DashboardWelcome } from './DashboardWelcome';
 import { DashboardStats } from './DashboardStats';
+import { AssetsCard } from './cards/AssetsCard';
 
 export function UnifiedDashboard() {
   const { user, loading } = useAuth();
@@ -120,6 +121,9 @@ export function UnifiedDashboard() {
             <div className="space-y-6">
               <DashboardWelcome />
               <DashboardStats />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <AssetsCard />
+              </div>
             </div>
           </TabsContent>
 
