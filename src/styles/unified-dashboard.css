@@ -1,0 +1,249 @@
+/* Unified Dashboard Styles */
+.unified-dashboard {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tabs Navigation */
+.dashboard-tabs {
+  display: flex;
+  background: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 0 16px;
+  overflow-x: auto;
+  gap: 4px;
+}
+
+.dashboard-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.dashboard-tabs::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 4px;
+}
+
+/* Tab Button Styling */
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.tab-button:hover {
+  color: hsl(var(--foreground));
+  background: hsl(var(--accent) / 0.1);
+}
+
+.tab-button.active {
+  color: hsl(var(--primary));
+  border-bottom-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
+}
+
+.tab-icon {
+  font-size: 16px;
+}
+
+/* Dashboard Content */
+.dashboard-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  background: hsl(var(--background));
+}
+
+/* Tab Specific Layouts */
+.overview-tab,
+.character-tab,
+.wallet-tab,
+.skills-tab,
+.assets-tab,
+.audit-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tab Header */
+.tab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.tab-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+}
+
+.last-update {
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+}
+
+/* Metrics Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* Status Section */
+.status-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 16px;
+}
+
+/* Activity Section */
+.activity-section {
+  margin-top: 24px;
+}
+
+/* Character Details Grid */
+.character-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.detail-section {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.detail-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  padding-bottom: 12px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-item span:first-child {
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+}
+
+.detail-item span:last-child {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}
+
+/* Security Status Styling */
+.security-positive {
+  color: hsl(142, 76%, 36%);
+  font-weight: 600;
+}
+
+.security-negative {
+  color: hsl(0, 84%, 60%);
+  font-weight: 600;
+}
+
+/* Loading States */
+.tab-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-tabs {
+    padding: 0 8px;
+  }
+  
+  .tab-button {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  
+  .tab-icon {
+    font-size: 14px;
+  }
+  
+  .dashboard-content {
+    padding: 16px;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .character-details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .tab-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .tab-header h1 {
+    font-size: 20px;
+  }
+}
+
+/* Smooth Scrolling */
+.dashboard-content {
+  scroll-behavior: smooth;
+}
+
+/* Card Hover Effects */
+.detail-section {
+  transition: all 0.2s ease;
+}
+
+.detail-section:hover {
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.1);
+  border-color: hsl(var(--primary) / 0.3);
+}
