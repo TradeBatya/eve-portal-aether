@@ -271,6 +271,7 @@ export type Database = {
       }
       esi_service_cache: {
         Row: {
+          access_count: number | null
           cache_key: string
           character_id: number | null
           created_at: string | null
@@ -279,8 +280,11 @@ export type Database = {
           expires_at: string
           id: number
           last_accessed: string | null
+          priority: number | null
+          tags: string[] | null
         }
         Insert: {
+          access_count?: number | null
           cache_key: string
           character_id?: number | null
           created_at?: string | null
@@ -289,8 +293,11 @@ export type Database = {
           expires_at: string
           id?: number
           last_accessed?: string | null
+          priority?: number | null
+          tags?: string[] | null
         }
         Update: {
+          access_count?: number | null
           cache_key?: string
           character_id?: number | null
           created_at?: string | null
@@ -299,40 +306,57 @@ export type Database = {
           expires_at?: string
           id?: number
           last_accessed?: string | null
+          priority?: number | null
+          tags?: string[] | null
         }
         Relationships: []
       }
       esi_service_request_logs: {
         Row: {
           accessed_at: string | null
+          cache_hit: boolean | null
           character_id: number | null
           endpoint: string
           error_message: string | null
+          from_queue: boolean | null
           id: number
           method: string | null
+          request_body: Json | null
+          response_body: Json | null
           response_time_ms: number | null
+          retry_count: number | null
           status_code: number | null
           user_agent: string | null
         }
         Insert: {
           accessed_at?: string | null
+          cache_hit?: boolean | null
           character_id?: number | null
           endpoint: string
           error_message?: string | null
+          from_queue?: boolean | null
           id?: number
           method?: string | null
+          request_body?: Json | null
+          response_body?: Json | null
           response_time_ms?: number | null
+          retry_count?: number | null
           status_code?: number | null
           user_agent?: string | null
         }
         Update: {
           accessed_at?: string | null
+          cache_hit?: boolean | null
           character_id?: number | null
           endpoint?: string
           error_message?: string | null
+          from_queue?: boolean | null
           id?: number
           method?: string | null
+          request_body?: Json | null
+          response_body?: Json | null
           response_time_ms?: number | null
+          retry_count?: number | null
           status_code?: number | null
           user_agent?: string | null
         }
@@ -341,33 +365,42 @@ export type Database = {
       esi_service_tokens: {
         Row: {
           access_token: string
+          auto_refresh_enabled: boolean | null
           character_id: number
           created_at: string | null
           expires_at: string
+          last_validated_at: string | null
           refresh_token: string
           scopes: string[]
           token_type: string | null
           updated_at: string | null
+          validation_failures: number | null
         }
         Insert: {
           access_token: string
+          auto_refresh_enabled?: boolean | null
           character_id: number
           created_at?: string | null
           expires_at: string
+          last_validated_at?: string | null
           refresh_token: string
           scopes: string[]
           token_type?: string | null
           updated_at?: string | null
+          validation_failures?: number | null
         }
         Update: {
           access_token?: string
+          auto_refresh_enabled?: boolean | null
           character_id?: number
           created_at?: string | null
           expires_at?: string
+          last_validated_at?: string | null
           refresh_token?: string
           scopes?: string[]
           token_type?: string | null
           updated_at?: string | null
+          validation_failures?: number | null
         }
         Relationships: []
       }
@@ -1729,6 +1762,7 @@ export type Database = {
     }
     Functions: {
       cleanup_esi_cache: { Args: never; Returns: undefined }
+      cleanup_esi_cache_old: { Args: never; Returns: undefined }
       get_user_permissions: { Args: { user_uuid: string }; Returns: Json }
       has_permission: {
         Args: { permission_name: string; user_uuid: string }
