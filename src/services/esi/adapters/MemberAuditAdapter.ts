@@ -1,8 +1,11 @@
-import EsiCoreService from '../EsiCoreService';
+import { BaseAdapter } from './BaseAdapter';
 import { supabase } from '@/integrations/supabase/client';
 
-export class MemberAuditAdapter {
-  private esiService = EsiCoreService.getInstance();
+/**
+ * MemberAuditAdapter - Comprehensive character audit data
+ * Extends BaseAdapter for unified ESI access
+ */
+export class MemberAuditAdapter extends BaseAdapter {
 
   /**
    * Get complete audit data for a character
