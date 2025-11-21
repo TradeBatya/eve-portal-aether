@@ -1,12 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, TrendingUp, TrendingDown, Loader2, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, Loader2, ArrowUpRight, ArrowDownRight, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
+import { useWallet } from "@/hooks/useWallet";
+import { Button } from "@/components/ui/button";
 
 export const WalletTracker = () => {
   const { user } = useAuth();
@@ -30,52 +32,15 @@ export const WalletTracker = () => {
     enabled: !!user?.id,
   });
 
-  // Get wallet balance from metadata
-  const { data: metadata } = useQuery({
-    queryKey: ['member-audit-metadata', mainCharacter?.character_id],
-    queryFn: async () => {
-      if (!mainCharacter?.character_id) return null;
-      
-      const { data, error } = await supabase
-        .from('member_audit_metadata')
-        .select('wallet_balance')
-        .eq('character_id', mainCharacter.character_id)
-        .single();
-
-      if (error) return null;
-      return data;
-    },
-    enabled: !!mainCharacter?.character_id,
-  });
-
-  // Get recent transactions from Member Audit
-  const { data: transactions } = useQuery({
-    queryKey: ['member-audit-transactions', mainCharacter?.character_id],
-    queryFn: async () => {
-      if (!mainCharacter?.character_id) return [];
-      
-      const { data, error } = await supabase
-        .from('member_audit_wallet_journal')
-        .select('*')
-        .eq('character_id', mainCharacter.character_id)
-        .order('date', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!mainCharacter?.character_id,
-  });
-
-  const totalIncome = transactions
-    ?.filter(t => Number(t.amount) > 0)
-    .reduce((sum, t) => sum + Number(t.amount), 0) || 0;
-
-  const totalExpense = Math.abs(
-    transactions
-      ?.filter(t => Number(t.amount) < 0)
-      .reduce((sum, t) => sum + Number(t.amount), 0) || 0
+  // Use new wallet hook with ESI adapters
+  const { summary, loading: walletLoading, error: walletError, refresh } = useWallet(
+    mainCharacter?.character_id,
+    { enabled: !!mainCharacter?.character_id, autoRefresh: true }
   );
+
+  const totalIncome = summary?.recentIncome || 0;
+  const totalExpense = summary?.recentExpense || 0;
+  const transactions = summary?.recentJournal || [];
 
   const t = {
     en: {
@@ -115,13 +80,36 @@ export const WalletTracker = () => {
     }).format(amount);
   };
 
+  if (walletLoading) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
+          <p className="text-muted-foreground">
+            {language === 'en' ? 'Loading wallet data...' : 'Загрузка данных кошелька...'}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Wallet className="w-5 h-5" />
-          {t.title}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="w-5 h-5" />
+            {t.title}
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={refresh}
+            disabled={walletLoading}
+          >
+            <RefreshCw className={`w-4 h-4 ${walletLoading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Balance Stats */}
@@ -129,8 +117,16 @@ export const WalletTracker = () => {
           <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
             <div className="text-sm text-muted-foreground mb-1">{t.balance}</div>
             <div className="text-3xl font-bold text-primary">
-              {formatISK(Number(metadata?.wallet_balance || 0))} ISK
+              {formatISK(summary?.balance || 0)} ISK
             </div>
+            {summary?.lastUpdated && (
+              <div className="text-xs text-muted-foreground mt-1">
+                {formatDistanceToNow(new Date(summary.lastUpdated), {
+                  locale: language === 'ru' ? ru : undefined,
+                  addSuffix: true,
+                })}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

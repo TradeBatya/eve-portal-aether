@@ -1,13 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Zap, Clock, Loader2, TrendingUp } from "lucide-react";
+import { Zap, Clock, Loader2, TrendingUp, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
+import { useSkills } from "@/hooks/useSkills";
+import { Button } from "@/components/ui/button";
 
 export const SkillMonitor = () => {
   const { user } = useAuth();
@@ -31,23 +33,11 @@ export const SkillMonitor = () => {
     enabled: !!user?.id,
   });
 
-  // Get skill queue from Member Audit
-  const { data: skillQueue } = useQuery({
-    queryKey: ['member-audit-skillqueue', mainCharacter?.character_id],
-    queryFn: async () => {
-      if (!mainCharacter?.character_id) return [];
-      
-      const { data, error } = await supabase
-        .from('member_audit_skillqueue')
-        .select('*')
-        .eq('character_id', mainCharacter.character_id)
-        .order('queue_position', { ascending: true });
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!mainCharacter?.character_id,
-  });
+  // Use new skills hook with ESI adapters
+  const { skillQueue, loading: skillsLoading, error: skillsError, refresh } = useSkills(
+    mainCharacter?.character_id,
+    { enabled: !!mainCharacter?.character_id, autoRefresh: true }
+  );
 
   const t = {
     en: {
@@ -88,6 +78,19 @@ export const SkillMonitor = () => {
     );
   }
 
+  if (skillsLoading) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
+          <p className="text-muted-foreground">
+            {language === 'en' ? 'Loading skills...' : 'Загрузка навыков...'}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!skillQueue || skillQueue.length === 0) {
     return (
       <Card>
@@ -106,22 +109,32 @@ export const SkillMonitor = () => {
 
   const activeSkill = skillQueue[0];
   const now = Date.now();
-  const startTime = activeSkill.start_date ? new Date(activeSkill.start_date).getTime() : now;
-  const endTime = activeSkill.finish_date ? new Date(activeSkill.finish_date).getTime() : now;
+  const startTime = activeSkill.startDate ? new Date(activeSkill.startDate).getTime() : now;
+  const endTime = activeSkill.finishDate ? new Date(activeSkill.finishDate).getTime() : now;
   const totalTime = endTime - startTime;
   const elapsed = now - startTime;
   const progressPercent = totalTime > 0 ? Math.min(100, Math.max(0, (elapsed / totalTime) * 100)) : 0;
 
-  const trainedSp = activeSkill.training_start_sp || 0;
-  const totalSp = activeSkill.level_end_sp || activeSkill.training_start_sp || 0;
+  const trainedSp = activeSkill.levelStartSp || 0;
+  const totalSp = activeSkill.levelEndSp || 0;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Zap className="w-5 h-5" />
-          {t.title}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="w-5 h-5" />
+            {t.title}
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={refresh}
+            disabled={skillsLoading}
+          >
+            <RefreshCw className={`w-4 h-4 ${skillsLoading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Active Training */}
@@ -132,10 +145,10 @@ export const SkillMonitor = () => {
                 {t.activeTraining}
               </Badge>
               <h4 className="font-semibold text-lg">
-                {activeSkill.skill_name}
+                {activeSkill.skillName}
               </h4>
               <p className="text-sm text-muted-foreground">
-                Level {activeSkill.finished_level}
+                Level {activeSkill.finishedLevel}
               </p>
             </div>
             <div className="text-right">
@@ -156,7 +169,7 @@ export const SkillMonitor = () => {
             </span>
             <span className="flex items-center gap-1 text-primary font-medium">
               <Clock className="w-4 h-4" />
-              {activeSkill.finish_date && formatDistanceToNow(new Date(activeSkill.finish_date), { 
+              {activeSkill.finishDate && formatDistanceToNow(new Date(activeSkill.finishDate), { 
                 locale: language === 'ru' ? ru : undefined,
                 addSuffix: true 
               })}
@@ -173,8 +186,8 @@ export const SkillMonitor = () => {
           <div className="p-3 rounded-lg bg-muted/50">
             <div className="text-xs text-muted-foreground mb-1">{t.totalQueueTime}</div>
             <div className="text-2xl font-bold">
-              {skillQueue.length > 0 && skillQueue[skillQueue.length - 1].finish_date
-                ? Math.ceil((new Date(skillQueue[skillQueue.length - 1].finish_date).getTime() - Date.now()) / 86400000)
+              {skillQueue.length > 0 && skillQueue[skillQueue.length - 1].finishDate
+                ? Math.ceil((new Date(skillQueue[skillQueue.length - 1].finishDate).getTime() - Date.now()) / 86400000)
                 : 0} {t.days}
             </div>
           </div>
@@ -189,7 +202,7 @@ export const SkillMonitor = () => {
           <div className="space-y-2">
             {skillQueue.map((skill, index) => (
               <div
-                key={skill.id}
+                key={`${skill.skillId}-${skill.queuePosition}`}
                 className={`p-3 rounded-lg border transition-colors ${
                   index === 0 
                     ? 'border-primary/30 bg-primary/5' 
@@ -198,20 +211,20 @@ export const SkillMonitor = () => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <div className="font-medium text-sm">{skill.skill_name}</div>
+                    <div className="font-medium text-sm">{skill.skillName}</div>
                     <div className="text-xs text-muted-foreground">
-                      Level {skill.finished_level} • {((skill.level_end_sp || 0) / 1000).toFixed(0)}k {t.sp}
+                      Level {skill.finishedLevel} • {((skill.levelEndSp || 0) / 1000).toFixed(0)}k {t.sp}
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground text-right">
-                    {index === 0 && skill.finish_date ? (
+                    {index === 0 && skill.finishDate ? (
                       <span className="text-primary font-medium">
-                        {formatDistanceToNow(new Date(skill.finish_date), { 
+                        {formatDistanceToNow(new Date(skill.finishDate), { 
                           locale: language === 'ru' ? ru : undefined 
                         })}
                       </span>
-                    ) : skill.start_date ? (
-                      formatDistanceToNow(new Date(skill.start_date), { 
+                    ) : skill.startDate ? (
+                      formatDistanceToNow(new Date(skill.startDate), { 
                         locale: language === 'ru' ? ru : undefined 
                       })
                     ) : null}
