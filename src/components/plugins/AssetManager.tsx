@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useCharacterAssets, useUniverseNames } from '@/hooks/useEsiApi';
 import { supabase } from '@/integrations/supabase/client';
+import { useAssets } from '@/hooks/useAssets';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,98 +50,75 @@ export const AssetManager = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch main character
-  useEffect(() => {
-    const fetchMainCharacter = async () => {
-      if (!user) return;
-      const { data } = await supabase
+  const { data: mainCharacter } = useQuery({
+    queryKey: ['main-character', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
         .from('eve_characters')
         .select('*')
         .eq('user_id', user.id)
         .eq('is_main', true)
         .single();
-      
-      if (data) setSelectedCharacter(data);
-    };
-    fetchMainCharacter();
-  }, [user]);
 
-  // Fetch assets from ESI
-  const { data: assetsData, isLoading, refetch } = useCharacterAssets(
-    selectedCharacter?.character_id,
-    selectedCharacter?.access_token
-  );
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
-  // Get unique location and type IDs for name resolution
-  const locationIds = useMemo(() => {
-    if (!assetsData) return [];
-    // Filter out structure IDs (>= 1000000000000) as they can't be resolved via /universe/names/
-    const allIds = [...new Set(assetsData.map((a: Asset) => a.location_id))];
-    const validIds = allIds.filter((id): id is number => typeof id === 'number' && id < 1000000000000);
-    return validIds;
-  }, [assetsData]);
-
-  const typeIds = useMemo(() => {
-    if (!assetsData) return [];
-    return [...new Set(assetsData.map((a: Asset) => a.type_id))] as number[];
-  }, [assetsData]);
-
-  const { data: locationNames } = useUniverseNames(locationIds);
-  
-  // Create location name map
-  const locationNameMap = useMemo(() => {
-    const map = new Map<number, string>();
-    if (locationNames) {
-      for (const item of locationNames) {
-        map.set(item.id, item.name);
-      }
+  useEffect(() => {
+    if (mainCharacter) {
+      setSelectedCharacter(mainCharacter);
     }
-    return map;
-  }, [locationNames]);
-  const { data: typeNames } = useUniverseNames(typeIds);
+  }, [mainCharacter]);
+
+  // Use new assets hook with ESI adapters
+  const { assets: assetsData, summary, loading: isLoading, error: assetsError, fetchAssets } = useAssets(
+    selectedCharacter?.character_id,
+    { enabled: !!selectedCharacter?.character_id }
+  );
 
   // Group assets by location
   const locationGroups = useMemo(() => {
     if (!assetsData) return [];
 
-    // Helper to get location name with fallback for structures
-    const getLocationName = (locationId: number) => {
-      if (locationId >= 1000000000000) {
-        return `Structure ${locationId}`;
-      }
-      return locationNames?.find((n: any) => n.id === locationId)?.name || `Location ${locationId}`;
-    };
-
-    const getLocationType = (locationId: number): string => {
-      if (locationId >= 60000000 && locationId < 64000000) return 'station';
-      if (locationId >= 1000000000000) return 'structure';
-      return 'space';
-    };
-
     const groups = new Map<number, LocationGroup>();
 
-    assetsData.forEach((asset: Asset) => {
-      const locationName = getLocationName(asset.location_id);
-      
-      if (!groups.has(asset.location_id)) {
-        groups.set(asset.location_id, {
-          location_id: asset.location_id,
-          location_name: locationName,
-          location_type: getLocationType(asset.location_id),
-          assets: [],
-          total_items: 0,
+    assetsData.forEach((asset) => {
+      if (!groups.has(asset.locationId)) {
+        groups.set(asset.locationId, {
+          location_id: asset.locationId,
+          location_name: asset.locationName || `Location ${asset.locationId}`,
+          location_type: asset.locationType || 'unknown',
+          assets: [{
+            item_id: asset.itemId,
+            location_id: asset.locationId,
+            type_id: asset.typeId,
+            quantity: asset.quantity,
+            is_singleton: asset.isSingleton,
+          }],
+          total_items: asset.quantity,
           estimated_value: 0,
         });
+      } else {
+        const group = groups.get(asset.locationId)!;
+        group.assets.push({
+          item_id: asset.itemId,
+          location_id: asset.locationId,
+          type_id: asset.typeId,
+          quantity: asset.quantity,
+          is_singleton: asset.isSingleton,
+        });
+        group.total_items += asset.quantity;
       }
-
-      const group = groups.get(asset.location_id)!;
-      group.assets.push(asset);
-      group.total_items += asset.quantity;
     });
 
     return Array.from(groups.values()).sort((a, b) => 
       a.location_name.localeCompare(b.location_name)
     );
-  }, [assetsData, locationNames]);
+  }, [assetsData]);
 
   // Filter locations by search
   const filteredGroups = useMemo(() => {
@@ -150,11 +128,11 @@ export const AssetManager = () => {
     return locationGroups.filter(group => 
       group.location_name.toLowerCase().includes(query) ||
       group.assets.some(asset => {
-        const typeName = typeNames?.find((n: any) => n.id === asset.type_id)?.name || '';
-        return typeName.toLowerCase().includes(query);
+        const assetData = assetsData?.find(a => a.itemId === asset.item_id);
+        return assetData?.typeName?.toLowerCase().includes(query);
       })
     );
-  }, [locationGroups, searchQuery, typeNames]);
+  }, [locationGroups, searchQuery, assetsData]);
 
   const toggleLocation = (locationId: number) => {
     const newExpanded = new Set(expandedLocations);
@@ -169,7 +147,7 @@ export const AssetManager = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refetch();
+      await fetchAssets();
       toast({
         title: language === 'en' ? 'Assets Updated' : 'Активы обновлены',
         description: language === 'en' 
@@ -190,16 +168,13 @@ export const AssetManager = () => {
   };
 
   const exportToCSV = () => {
-    if (!assetsData || !typeNames) return;
+    if (!assetsData) return;
 
     const headers = ['Location', 'Item', 'Quantity', 'Type'];
-    const rows = assetsData.map((asset: Asset) => {
-      // Get location name with structure fallback
-      const location = asset.location_id >= 1000000000000 
-        ? `Structure ${asset.location_id}`
-        : (locationNames?.find((n: any) => n.id === asset.location_id)?.name || `Location ${asset.location_id}`);
-      const item = typeNames?.find((n: any) => n.id === asset.type_id)?.name || asset.type_id;
-      return [location, item, asset.quantity, asset.is_singleton ? 'Single' : 'Stack'];
+    const rows = assetsData.map((asset) => {
+      const location = asset.locationName || `Location ${asset.locationId}`;
+      const item = asset.typeName || asset.typeId;
+      return [location, item, asset.quantity, asset.isSingleton ? 'Single' : 'Stack'];
     });
 
     const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
@@ -325,7 +300,8 @@ export const AssetManager = () => {
                     {expandedLocations.has(group.location_id) && (
                       <div className="border-t bg-muted/30">
                         {group.assets.map((asset, idx) => {
-                          const typeName = typeNames?.find((n: any) => n.id === asset.type_id)?.name || `Type ${asset.type_id}`;
+                          const assetData = assetsData?.find(a => a.itemId === asset.item_id);
+                          const typeName = assetData?.typeName || `Type ${asset.type_id}`;
                           return (
                             <div
                               key={`${asset.item_id}-${idx}`}
