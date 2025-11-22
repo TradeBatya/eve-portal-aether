@@ -7,11 +7,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { esiService } from "@/services/esiService";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
+import { useWallet } from "@/hooks/useWallet";
+import { memberAuditAdapter } from "@/services/esi/adapters/MemberAuditAdapter";
 
 export const CharacterOverview = () => {
   const { user } = useAuth();
@@ -38,7 +39,10 @@ export const CharacterOverview = () => {
 
   const mainCharacter = characters?.find(c => c.is_main) || characters?.[0];
 
-  // Get Member Audit metadata for main character
+  // Use new hooks for data fetching
+  const { balance } = useWallet(mainCharacter?.character_id);
+
+  // Get Member Audit metadata for location and ship info
   const { data: metadata } = useQuery({
     queryKey: ['member-audit-metadata', mainCharacter?.character_id],
     queryFn: async () => {
@@ -61,8 +65,10 @@ export const CharacterOverview = () => {
     
     setIsRefreshing(true);
     try {
-      await esiService.refreshCharacterData(mainCharacter.character_id);
+      // Use MemberAuditAdapter for full refresh
+      await memberAuditAdapter.refreshCharacterData(mainCharacter.character_id);
       await queryClient.invalidateQueries({ queryKey: ['member-audit-metadata'] });
+      await queryClient.invalidateQueries({ queryKey: ['wallet'] });
       toast({
         title: language === 'en' ? 'Success' : 'Успешно',
         description: language === 'en' 
@@ -82,9 +88,9 @@ export const CharacterOverview = () => {
     }
   };
 
-  const cacheStatus = metadata?.last_update_at 
-    ? esiService.getCacheStatus(metadata.last_update_at)
-    : { isStale: true, ageMinutes: Infinity };
+  const lastSyncTime = metadata?.last_update_at 
+    ? formatDistanceToNow(new Date(metadata.last_update_at), { addSuffix: true })
+    : (language === 'en' ? 'Never' : 'Никогда');
 
   const t = {
     en: {
@@ -208,10 +214,10 @@ export const CharacterOverview = () => {
               {t.wallet}
             </div>
             <div className="font-semibold">
-              {!metadata?.wallet_balance ? (
+              {balance === undefined ? (
                 <Skeleton className="h-4 w-24" />
               ) : (
-                `${Number(metadata.wallet_balance).toLocaleString()} ISK`
+                `${balance.toLocaleString()} ISK`
               )}
             </div>
           </div>
@@ -246,10 +252,8 @@ export const CharacterOverview = () => {
         {/* Sync Status */}
         <div className="flex items-center justify-between text-xs border-t pt-3">
           <span className="text-muted-foreground">{t.lastSync}:</span>
-          <span className={`font-medium ${cacheStatus.isStale ? 'text-yellow-500' : 'text-green-500'}`}>
-            {metadata?.last_update_at 
-              ? formatDistanceToNow(new Date(metadata.last_update_at), { addSuffix: true })
-              : t.never}
+          <span className="font-medium text-muted-foreground">
+            {lastSyncTime}
           </span>
         </div>
 

@@ -251,11 +251,12 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="news" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="news">{t.newsManagement}</TabsTrigger>
             <TabsTrigger value="roles">{t.roleManagement}</TabsTrigger>
             <TabsTrigger value="pings">{t.pingManagement}</TabsTrigger>
             <TabsTrigger value="webhooks">{t.webhookManagement}</TabsTrigger>
+            <TabsTrigger value="esi">{language === 'en' ? 'ESI Monitor' : 'ESI Монитор'}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="news" className="space-y-4">
@@ -307,6 +308,21 @@ export default function Admin() {
 
           <TabsContent value="webhooks">
             <WebhookManagement />
+          </TabsContent>
+
+          <TabsContent value="esi">
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground mb-4">
+                  {language === 'en' 
+                    ? 'ESI monitoring dashboard provides detailed insights into API performance, token health, and system metrics.'
+                    : 'Панель мониторинга ESI предоставляет подробную информацию о производительности API, состоянии токенов и системных метриках.'}
+                </p>
+                <Button onClick={() => navigate('/admin/esi-monitor')}>
+                  {language === 'en' ? 'Open ESI Monitor' : 'Открыть ESI Монитор'}
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

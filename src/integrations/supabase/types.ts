@@ -1779,6 +1779,10 @@ export type Database = {
         Args: { min_level: number; user_uuid: string }
         Returns: boolean
       }
+      increment_token_failures: {
+        Args: { char_id: number }
+        Returns: undefined
+      }
       update_achievement_progress: {
         Args: {
           p_achievement_key: string
