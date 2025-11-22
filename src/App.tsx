@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { PluginProvider } from "./plugins";
+import { tokenRefreshScheduler } from "./services/esi/TokenRefreshScheduler";
+import { useEffect } from "react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
@@ -20,10 +22,23 @@ import EveCallback from "./pages/EveCallback";
 import DiscordCallback from "./pages/DiscordCallback";
 import NotFound from "./pages/NotFound";
 import Developer from "./pages/Developer";
+import EsiMonitor from "./pages/EsiMonitor";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  // Start TokenRefreshScheduler on app mount
+  useEffect(() => {
+    console.log('[App] Starting TokenRefreshScheduler...');
+    tokenRefreshScheduler.start();
+
+    return () => {
+      console.log('[App] Stopping TokenRefreshScheduler...');
+      tokenRefreshScheduler.stop();
+    };
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <LanguageProvider>
@@ -38,6 +53,7 @@ const App = () => (
                 <Route path="/auth/eve/callback" element={<EveCallback />} />
                 <Route path="/auth/discord/callback" element={<DiscordCallback />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/esi-monitor" element={<EsiMonitor />} />
                 <Route path="/developer" element={<Developer />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -55,6 +71,7 @@ const App = () => (
       </LanguageProvider>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
