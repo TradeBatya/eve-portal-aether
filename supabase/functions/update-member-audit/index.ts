@@ -10,90 +10,55 @@ interface UpdateRequest {
   modules?: string[];
 }
 
-interface ESIResponse {
-  data: any;
+interface ModuleResult {
+  success: boolean;
   error?: string;
-  status: number;
-  responseTime: number;
+  updated: number;
 }
 
-// ESI Helper - fetch with logging
-async function fetchESI(
+// Use esi-core-proxy for all ESI requests with caching
+async function callEsiProxy(
   endpoint: string,
-  accessToken: string,
   characterId: number,
   supabase: any
-): Promise<ESIResponse> {
-  const startTime = Date.now();
-  const url = `https://esi.evetech.net/latest${endpoint}`;
-  
+): Promise<{ data: any; error?: string }> {
   try {
-    console.log(`[ESI] Fetching: ${endpoint}`);
-    
-    const response = await fetch(url, {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/esi-core-proxy`, {
+      method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`,
       },
-    });
-
-    const responseTime = Date.now() - startTime;
-    const data = await response.json();
-
-    // Log request
-    await supabase.from('member_audit_esi_logs').insert({
-      character_id: characterId,
-      endpoint,
-      method: 'GET',
-      status_code: response.status,
-      response_time_ms: responseTime,
-      error_message: response.ok ? null : data.error || 'Unknown error',
-      error_details: response.ok ? null : data,
+      body: JSON.stringify({
+        endpoint,
+        method: 'GET',
+        characterId,
+      }),
     });
 
     if (!response.ok) {
-      console.error(`[ESI] Error ${response.status}: ${endpoint}`, data);
-      return {
-        data: null,
-        error: data.error || 'ESI request failed',
-        status: response.status,
-        responseTime,
-      };
+      const errorData = await response.json();
+      return { data: null, error: errorData.error || 'ESI request failed' };
     }
 
-    console.log(`[ESI] Success: ${endpoint} (${responseTime}ms)`);
-    return { data, error: undefined, status: response.status, responseTime };
-  } catch (error) {
-    const responseTime = Date.now() - startTime;
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[ESI] Exception: ${endpoint}`, error);
-    
-    await supabase.from('member_audit_esi_logs').insert({
-      character_id: characterId,
-      endpoint,
-      method: 'GET',
-      status_code: 0,
-      response_time_ms: responseTime,
-      error_message: errorMessage,
-      error_details: { exception: String(error) },
-    });
+    const data = await response.json();
+    return { data, error: undefined };
 
-    return {
-      data: null,
-      error: errorMessage,
-      status: 0,
-      responseTime,
-    };
+  } catch (error: any) {
+    console.error(`[ESI] Failed to call ${endpoint}:`, error);
+    return { data: null, error: error.message };
   }
 }
 
-// Helper to resolve type IDs to names using /universe/types/
+// Helper to resolve type IDs to names
 async function resolveTypeNames(typeIds: number[]): Promise<Map<number, string>> {
   const names = new Map<number, string>();
   
   if (typeIds.length === 0) return names;
 
-  // Batch fetch type information
   const batchSize = 100;
   for (let i = 0; i < typeIds.length; i += batchSize) {
     const batch = typeIds.slice(i, i + batchSize);
@@ -107,7 +72,7 @@ async function resolveTypeNames(typeIds: number[]): Promise<Map<number, string>>
             names.set(typeId, data.name);
           }
         } catch (error) {
-          console.error(`[ESI] Failed to resolve type ${typeId}:`, error);
+          console.error(`Failed to resolve type ${typeId}:`, error);
         }
       })
     );
@@ -116,7 +81,7 @@ async function resolveTypeNames(typeIds: number[]): Promise<Map<number, string>>
   return names;
 }
 
-// Helper to resolve entity IDs to names using /universe/names/
+// Helper to resolve entity IDs to names
 async function resolveEntityNames(entityIds: number[]): Promise<Map<number, string>> {
   const names = new Map<number, string>();
   
@@ -136,75 +101,28 @@ async function resolveEntityNames(entityIds: number[]): Promise<Map<number, stri
       });
     }
   } catch (error) {
-    console.error('[ESI] Failed to resolve entity names:', error);
+    console.error('Failed to resolve entity names:', error);
   }
 
   return names;
 }
 
-// Обновление токена
-async function refreshAccessToken(refreshToken: string): Promise<string | null> {
-  const clientId = Deno.env.get('EVE_CLIENT_ID');
-  const clientSecret = Deno.env.get('EVE_CLIENT_SECRET');
-
-  if (!clientId || !clientSecret) {
-    console.error('[Token] Missing EVE_CLIENT_ID or EVE_CLIENT_SECRET');
-    return null;
-  }
-
-  try {
-    const auth = btoa(`${clientId}:${clientSecret}`);
-    const response = await fetch('https://login.eveonline.com/v2/oauth/token', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('[Token] Refresh failed:', await response.text());
-      return null;
-    }
-
-    const data = await response.json();
-    console.log('[Token] Successfully refreshed');
-    return data.access_token;
-  } catch (error) {
-    console.error('[Token] Refresh exception:', error);
-    return null;
-  }
-}
-
 // MODULE: Skills
-async function updateSkills(characterId: number, accessToken: string, supabase: any) {
+async function updateSkills(characterId: number, supabase: any): Promise<ModuleResult> {
   console.log('[Module:Skills] Starting update...');
   
-  // Fetch skills
-  const skillsRes = await fetchESI(
-    `/characters/${characterId}/skills/`,
-    accessToken,
-    characterId,
-    supabase
-  );
+  const skillsRes = await callEsiProxy(`/characters/${characterId}/skills/`, characterId, supabase);
 
   if (skillsRes.error || !skillsRes.data) {
     return { success: false, error: skillsRes.error, updated: 0 };
   }
 
   const skills = skillsRes.data.skills || [];
-  
-  // Resolve skill type IDs to names
   const skillIds = skills.map((s: any) => s.skill_id);
   const skillNames = await resolveTypeNames(skillIds);
   
   let updated = 0;
 
-  // Upsert skills with resolved names
   for (const skill of skills) {
     const { error } = await supabase.from('member_audit_skills').upsert({
       character_id: characterId,
@@ -221,7 +139,6 @@ async function updateSkills(characterId: number, accessToken: string, supabase: 
     if (!error) updated++;
   }
 
-  // Update metadata
   await supabase.from('member_audit_metadata').upsert({
     character_id: characterId,
     total_sp: skillsRes.data.total_sp || 0,
@@ -235,27 +152,19 @@ async function updateSkills(characterId: number, accessToken: string, supabase: 
 }
 
 // MODULE: Skillqueue
-async function updateSkillqueue(characterId: number, accessToken: string, supabase: any) {
+async function updateSkillqueue(characterId: number, supabase: any): Promise<ModuleResult> {
   console.log('[Module:Skillqueue] Starting update...');
   
-  const res = await fetchESI(
-    `/characters/${characterId}/skillqueue/`,
-    accessToken,
-    characterId,
-    supabase
-  );
+  const res = await callEsiProxy(`/characters/${characterId}/skillqueue/`, characterId, supabase);
 
   if (res.error || !res.data) {
     return { success: false, error: res.error, updated: 0 };
   }
 
   const queue = res.data;
-  
-  // Resolve skill names
   const skillIds = queue.map((item: any) => item.skill_id);
   const skillNames = await resolveTypeNames(skillIds);
 
-  // Delete old queue
   await supabase.from('member_audit_skillqueue')
     .delete()
     .eq('character_id', characterId);
@@ -284,16 +193,10 @@ async function updateSkillqueue(characterId: number, accessToken: string, supaba
 }
 
 // MODULE: Wallet
-async function updateWallet(characterId: number, accessToken: string, supabase: any) {
+async function updateWallet(characterId: number, supabase: any): Promise<ModuleResult> {
   console.log('[Module:Wallet] Starting update...');
   
-  // Get wallet balance
-  const balanceRes = await fetchESI(
-    `/characters/${characterId}/wallet/`,
-    accessToken,
-    characterId,
-    supabase
-  );
+  const balanceRes = await callEsiProxy(`/characters/${characterId}/wallet/`, characterId, supabase);
 
   if (!balanceRes.error && balanceRes.data) {
     await supabase.from('member_audit_metadata').upsert({
@@ -304,13 +207,7 @@ async function updateWallet(characterId: number, accessToken: string, supabase: 
     });
   }
 
-  // Get wallet journal (last 30 days)
-  const journalRes = await fetchESI(
-    `/characters/${characterId}/wallet/journal/`,
-    accessToken,
-    characterId,
-    supabase
-  );
+  const journalRes = await callEsiProxy(`/characters/${characterId}/wallet/journal/`, characterId, supabase);
 
   let journalUpdated = 0;
   if (!journalRes.error && journalRes.data) {
@@ -339,17 +236,10 @@ async function updateWallet(characterId: number, accessToken: string, supabase: 
     }
   }
 
-  // Get wallet transactions
-  const transactionsRes = await fetchESI(
-    `/characters/${characterId}/wallet/transactions/`,
-    accessToken,
-    characterId,
-    supabase
-  );
+  const transactionsRes = await callEsiProxy(`/characters/${characterId}/wallet/transactions/`, characterId, supabase);
 
   let transactionsUpdated = 0;
   if (!transactionsRes.error && transactionsRes.data) {
-    // Resolve type names
     const typeIds = [...new Set(transactionsRes.data.map((tx: any) => tx.type_id))] as number[];
     const typeNames = await resolveTypeNames(typeIds);
     
@@ -381,24 +271,17 @@ async function updateWallet(characterId: number, accessToken: string, supabase: 
 }
 
 // MODULE: Implants
-async function updateImplants(characterId: number, accessToken: string, supabase: any) {
+async function updateImplants(characterId: number, supabase: any): Promise<ModuleResult> {
   console.log('[Module:Implants] Starting update...');
   
-  const res = await fetchESI(
-    `/characters/${characterId}/implants/`,
-    accessToken,
-    characterId,
-    supabase
-  );
+  const res = await callEsiProxy(`/characters/${characterId}/implants/`, characterId, supabase);
 
   if (res.error || !res.data) {
     return { success: false, error: res.error, updated: 0 };
   }
 
-  // Resolve implant names
   const implantNames = await resolveTypeNames(res.data);
 
-  // Delete old implants
   await supabase.from('member_audit_implants')
     .delete()
     .eq('character_id', characterId);
@@ -421,21 +304,15 @@ async function updateImplants(characterId: number, accessToken: string, supabase
 }
 
 // MODULE: Clones
-async function updateClones(characterId: number, accessToken: string, supabase: any) {
+async function updateClones(characterId: number, supabase: any): Promise<ModuleResult> {
   console.log('[Module:Clones] Starting update...');
   
-  const res = await fetchESI(
-    `/characters/${characterId}/clones/`,
-    accessToken,
-    characterId,
-    supabase
-  );
+  const res = await callEsiProxy(`/characters/${characterId}/clones/`, characterId, supabase);
 
   if (res.error || !res.data) {
     return { success: false, error: res.error, updated: 0 };
   }
 
-  // Delete old clones
   await supabase.from('member_audit_clones')
     .delete()
     .eq('character_id', characterId);
@@ -462,21 +339,15 @@ async function updateClones(characterId: number, accessToken: string, supabase: 
 }
 
 // MODULE: Contacts
-async function updateContacts(characterId: number, accessToken: string, supabase: any) {
+async function updateContacts(characterId: number, supabase: any): Promise<ModuleResult> {
   console.log('[Module:Contacts] Starting update...');
   
-  const res = await fetchESI(
-    `/characters/${characterId}/contacts/`,
-    accessToken,
-    characterId,
-    supabase
-  );
+  const res = await callEsiProxy(`/characters/${characterId}/contacts/`, characterId, supabase);
 
   if (res.error || !res.data) {
     return { success: false, error: res.error, updated: 0 };
   }
 
-  // Resolve contact names
   const contactIds = res.data.map((c: any) => c.contact_id);
   const contactNames = await resolveEntityNames(contactIds);
 
@@ -503,47 +374,33 @@ async function updateContacts(characterId: number, accessToken: string, supabase
 }
 
 // MODULE: Contracts
-async function updateContracts(characterId: number, accessToken: string, supabase: any) {
+async function updateContracts(characterId: number, supabase: any): Promise<ModuleResult> {
   console.log('[Module:Contracts] Starting update...');
   
-  const res = await fetchESI(
-    `/characters/${characterId}/contracts/`,
-    accessToken,
-    characterId,
-    supabase
-  );
+  const res = await callEsiProxy(`/characters/${characterId}/contracts/`, characterId, supabase);
 
   if (res.error || !res.data) {
     return { success: false, error: res.error, updated: 0 };
   }
-
-  // Resolve issuer names
-  const issuerIds = [...new Set(res.data.map((c: any) => c.issuer_id))] as number[];
-  const issuerNames = await resolveEntityNames(issuerIds);
 
   let updated = 0;
   for (const contract of res.data) {
     const { error } = await supabase.from('member_audit_contracts').upsert({
       character_id: characterId,
       contract_id: contract.contract_id,
+      issuer_id: contract.issuer_id,
       type: contract.type,
       status: contract.status,
-      issuer_id: contract.issuer_id,
-      issuer_name: issuerNames.get(contract.issuer_id) || `Issuer ${contract.issuer_id}`,
-      assignee_id: contract.assignee_id,
-      acceptor_id: contract.acceptor_id,
+      title: contract.title,
+      for_corporation: contract.for_corporation,
       price: contract.price,
       reward: contract.reward,
       collateral: contract.collateral,
       volume: contract.volume,
-      start_location_id: contract.start_location_id,
-      end_location_id: contract.end_location_id,
       date_issued: contract.date_issued,
       date_expired: contract.date_expired,
       date_accepted: contract.date_accepted,
       date_completed: contract.date_completed,
-      title: contract.title,
-      for_corporation: contract.for_corporation || false,
     }, {
       onConflict: 'contract_id',
     });
@@ -555,28 +412,22 @@ async function updateContracts(characterId: number, accessToken: string, supabas
   return { success: true, updated };
 }
 
-// MODULE: Industry
-async function updateIndustry(characterId: number, accessToken: string, supabase: any) {
+// MODULE: Industry Jobs
+async function updateIndustryJobs(characterId: number, supabase: any): Promise<ModuleResult> {
   console.log('[Module:Industry] Starting update...');
   
-  const res = await fetchESI(
-    `/characters/${characterId}/industry/jobs/`,
-    accessToken,
-    characterId,
-    supabase
-  );
+  const res = await callEsiProxy(`/characters/${characterId}/industry/jobs/`, characterId, supabase);
 
   if (res.error || !res.data) {
     return { success: false, error: res.error, updated: 0 };
   }
 
-  // Resolve blueprint and product names
-  const typeIds = new Set<number>();
-  res.data.forEach((job: any) => {
-    typeIds.add(job.blueprint_type_id);
-    if (job.product_type_id) typeIds.add(job.product_type_id);
-  });
-  const typeNames = await resolveTypeNames(Array.from(typeIds));
+  const typeIds = [...new Set([
+    ...res.data.map((job: any) => job.blueprint_type_id),
+    ...res.data.map((job: any) => job.product_type_id).filter((id: any) => id)
+  ])] as number[];
+  
+  const typeNames = await resolveTypeNames(typeIds);
 
   let updated = 0;
   for (const job of res.data) {
@@ -584,21 +435,20 @@ async function updateIndustry(characterId: number, accessToken: string, supabase
       character_id: characterId,
       job_id: job.job_id,
       activity_id: job.activity_id,
-      activity_name: `Activity ${job.activity_id}`,
-      status: job.status,
+      activity_name: getActivityName(job.activity_id),
       blueprint_id: job.blueprint_id,
       blueprint_type_id: job.blueprint_type_id,
       blueprint_type_name: typeNames.get(job.blueprint_type_id) || `Blueprint ${job.blueprint_type_id}`,
       blueprint_location_id: job.blueprint_location_id,
       product_type_id: job.product_type_id,
-      product_type_name: job.product_type_id ? (typeNames.get(job.product_type_id) || `Product ${job.product_type_id}`) : null,
+      product_type_name: job.product_type_id ? typeNames.get(job.product_type_id) || `Product ${job.product_type_id}` : null,
       facility_id: job.facility_id,
-      solar_system_id: job.solar_system_id,
       runs: job.runs,
       licensed_runs: job.licensed_runs,
       start_date: job.start_date,
       end_date: job.end_date,
       pause_date: job.pause_date,
+      status: job.status,
       cost: job.cost,
     }, {
       onConflict: 'job_id',
@@ -611,22 +461,29 @@ async function updateIndustry(characterId: number, accessToken: string, supabase
   return { success: true, updated };
 }
 
-// MODULE: Loyalty
-async function updateLoyalty(characterId: number, accessToken: string, supabase: any) {
+function getActivityName(activityId: number): string {
+  const activities: Record<number, string> = {
+    1: 'Manufacturing',
+    3: 'Time Efficiency Research',
+    4: 'Material Efficiency Research',
+    5: 'Copying',
+    7: 'Reverse Engineering',
+    8: 'Invention',
+    9: 'Reactions',
+  };
+  return activities[activityId] || `Activity ${activityId}`;
+}
+
+// MODULE: Loyalty Points
+async function updateLoyaltyPoints(characterId: number, supabase: any): Promise<ModuleResult> {
   console.log('[Module:Loyalty] Starting update...');
   
-  const res = await fetchESI(
-    `/characters/${characterId}/loyalty/points/`,
-    accessToken,
-    characterId,
-    supabase
-  );
+  const res = await callEsiProxy(`/characters/${characterId}/loyalty/points/`, characterId, supabase);
 
   if (res.error || !res.data) {
     return { success: false, error: res.error, updated: 0 };
   }
 
-  // Resolve corporation names
   const corpIds = res.data.map((lp: any) => lp.corporation_id);
   const corpNames = await resolveEntityNames(corpIds);
 
@@ -644,7 +501,7 @@ async function updateLoyalty(characterId: number, accessToken: string, supabase:
     if (!error) updated++;
   }
 
-  console.log(`[Module:Loyalty] Updated ${updated} LP entries`);
+  console.log(`[Module:Loyalty] Updated ${updated} loyalty points`);
   return { success: true, updated };
 }
 
@@ -654,242 +511,105 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const { character_id, modules = ['all'] }: UpdateRequest = await req.json();
+
+    if (!character_id) {
+      return new Response(
+        JSON.stringify({ error: 'character_id is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[MemberAudit] Starting sync for character ${character_id}, modules:`, modules);
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { character_id, modules = ['skills', 'skillqueue', 'wallet', 'implants', 'clones', 'contacts', 'contracts', 'industry', 'loyalty'] }: UpdateRequest = await req.json();
-
-    console.log(`[Update] Starting sync for character ${character_id}, modules:`, modules);
-
-    // Get character data
-    const { data: character, error: charError } = await supabase
-      .from('eve_characters')
-      .select('*')
-      .eq('character_id', character_id)
-      .single();
-
-    if (charError || !character) {
-      throw new Error('Character not found');
-    }
-
-    // Check if token needs refresh
-    let accessToken = character.access_token;
-    const expiresAt = new Date(character.expires_at);
-    
-    if (expiresAt < new Date()) {
-      console.log('[Update] Token expired, refreshing...');
-      accessToken = await refreshAccessToken(character.refresh_token);
-      
-      if (!accessToken) {
-        throw new Error('Failed to refresh access token');
-      }
-
-      // Update token in database
-      const newExpiresAt = new Date(Date.now() + 20 * 60 * 1000); // 20 minutes
-      await supabase
-        .from('eve_characters')
-        .update({
-          access_token: accessToken,
-          expires_at: newExpiresAt.toISOString(),
-        })
-        .eq('character_id', character_id);
-    }
-
-    // Initialize or update metadata
+    // Update sync status
     await supabase.from('member_audit_metadata').upsert({
       character_id,
-      user_id: character.user_id,
       sync_status: 'syncing',
+      sync_progress: { started_at: new Date().toISOString() },
+    }, {
+      onConflict: 'character_id',
+    });
+
+    const results: Record<string, ModuleResult> = {};
+    const enabledModules = modules.includes('all') ? [
+      'skills', 'skillqueue', 'wallet', 'implants', 'clones', 
+      'contacts', 'contracts', 'industry', 'loyalty'
+    ] : modules;
+
+    // Execute modules sequentially to avoid rate limiting
+    for (const module of enabledModules) {
+      try {
+        switch (module) {
+          case 'skills':
+            results.skills = await updateSkills(character_id, supabase);
+            break;
+          case 'skillqueue':
+            results.skillqueue = await updateSkillqueue(character_id, supabase);
+            break;
+          case 'wallet':
+            results.wallet = await updateWallet(character_id, supabase);
+            break;
+          case 'implants':
+            results.implants = await updateImplants(character_id, supabase);
+            break;
+          case 'clones':
+            results.clones = await updateClones(character_id, supabase);
+            break;
+          case 'contacts':
+            results.contacts = await updateContacts(character_id, supabase);
+            break;
+          case 'contracts':
+            results.contracts = await updateContracts(character_id, supabase);
+            break;
+          case 'industry':
+            results.industry = await updateIndustryJobs(character_id, supabase);
+            break;
+          case 'loyalty':
+            results.loyalty = await updateLoyaltyPoints(character_id, supabase);
+            break;
+        }
+      } catch (error: any) {
+        console.error(`[MemberAudit] Module ${module} failed:`, error);
+        results[module] = { success: false, error: error.message, updated: 0 };
+      }
+    }
+
+    // Update final status
+    const hasErrors = Object.values(results).some(r => !r.success);
+    await supabase.from('member_audit_metadata').upsert({
+      character_id,
+      sync_status: hasErrors ? 'error' : 'completed',
+      sync_errors: hasErrors ? Object.entries(results).filter(([_, r]) => !r.success).map(([m, r]) => ({ module: m, error: r.error })) : [],
+      last_full_sync_at: new Date().toISOString(),
       last_update_at: new Date().toISOString(),
     }, {
       onConflict: 'character_id',
     });
 
-    // Process modules
-    const results: Record<string, any> = {};
-    const progress: Record<string, number> = {};
-    const errors: string[] = [];
-
-    // Get basic character info (security_status)
-    let securityStatus = null;
-    try {
-      const charInfoResponse = await fetchESI(`/characters/${character_id}/`, '', character_id, supabase);
-      if (charInfoResponse.data) {
-        securityStatus = charInfoResponse.data.security_status;
-        console.log(`Security status: ${securityStatus}`);
-      }
-    } catch (error) {
-      console.error('Error fetching character info:', error);
-    }
-
-    // Get location data
-    let locationData: any = {};
-    try {
-      const locationResponse = await fetchESI(`/characters/${character_id}/location/`, accessToken, character_id, supabase);
-      if (locationResponse.data) {
-        const locData = locationResponse.data;
-        locationData = {
-          location_id: locData.station_id || locData.structure_id || locData.solar_system_id,
-          location_type: locData.station_id ? 'station' : locData.structure_id ? 'structure' : 'solar_system',
-          solar_system_id: locData.solar_system_id,
-        };
-
-        // Resolve solar system name
-        if (locData.solar_system_id) {
-          const sysNameResponse = await fetch('https://esi.evetech.net/latest/universe/names/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify([locData.solar_system_id]),
-          });
-          if (sysNameResponse.ok) {
-            const sysNames = await sysNameResponse.json();
-            if (sysNames.length > 0) {
-              locationData.solar_system_name = sysNames[0].name;
-            }
-          }
-        }
-
-        // Resolve location name (skip structures for now)
-        if (locationData.location_id && locationData.location_type !== 'structure') {
-          const locNameResponse = await fetch('https://esi.evetech.net/latest/universe/names/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify([locationData.location_id]),
-          });
-          if (locNameResponse.ok) {
-            const locNames = await locNameResponse.json();
-            if (locNames.length > 0) {
-              locationData.location_name = locNames[0].name;
-            }
-          }
-        } else if (locationData.location_type === 'structure') {
-          locationData.location_name = `Structure ${locationData.location_id}`;
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching location:', error);
-    }
-
-    // Get ship data
-    let shipData: any = {};
-    try {
-      const shipResponse = await fetchESI(`/characters/${character_id}/ship/`, accessToken, character_id, supabase);
-      if (shipResponse.data) {
-        const shipInfo = shipResponse.data;
-        shipData = {
-          ship_type_id: shipInfo.ship_type_id,
-          ship_name: shipInfo.ship_name,
-        };
-
-        // Resolve ship type name
-        if (shipInfo.ship_type_id) {
-          const shipTypeResponse = await fetch(`https://esi.evetech.net/latest/universe/types/${shipInfo.ship_type_id}/`);
-          if (shipTypeResponse.ok) {
-            const shipType = await shipTypeResponse.json();
-            shipData.ship_type_name = shipType.name;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching ship:', error);
-    }
-
-    const moduleHandlers: Record<string, Function> = {
-      skills: updateSkills,
-      skillqueue: updateSkillqueue,
-      wallet: updateWallet,
-      implants: updateImplants,
-      clones: updateClones,
-      contacts: updateContacts,
-      contracts: updateContracts,
-      industry: updateIndustry,
-      loyalty: updateLoyalty,
-    };
-
-    for (const module of modules) {
-      const handler = moduleHandlers[module];
-      if (!handler) {
-        console.warn(`[Update] Unknown module: ${module}`);
-        continue;
-      }
-
-      try {
-        const result = await handler(character_id, accessToken, supabase);
-        results[module] = result;
-        progress[module] = result.success ? 100 : 0;
-        
-        if (!result.success) {
-          errors.push(`${module}: ${result.error}`);
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`[Update] Error in module ${module}:`, error);
-        results[module] = { success: false, error: errorMessage };
-        progress[module] = 0;
-        errors.push(`${module}: ${errorMessage}`);
-      }
-    }
-
-    // Calculate total assets value from character_assets
-    let totalAssetsValue = 0;
-    try {
-      const { data: assets } = await supabase
-        .from('character_assets')
-        .select('estimated_value, quantity')
-        .eq('character_id', character_id);
-      
-      if (assets) {
-        totalAssetsValue = assets.reduce((sum: number, asset: any) => {
-          return sum + (asset.estimated_value || 0) * (asset.quantity || 1);
-        }, 0);
-        console.log(`Calculated total assets value: ${totalAssetsValue}`);
-      }
-    } catch (error) {
-      console.error('Error calculating assets value:', error);
-    }
-
-    // Get current metadata values for SP and wallet (updated by modules)
-    const { data: currentMetadata } = await supabase
-      .from('member_audit_metadata')
-      .select('total_sp, unallocated_sp, wallet_balance')
-      .eq('character_id', character_id)
-      .single();
-
-    // Update final metadata
-    await supabase.from('member_audit_metadata').update({
-      security_status: securityStatus,
-      total_assets_value: totalAssetsValue,
-      sync_status: errors.length > 0 ? 'failed' : 'completed',
-      sync_progress: progress,
-      sync_errors: errors,
-      ...locationData,
-      ...shipData,
-      last_full_sync_at: new Date().toISOString(),
-      last_update_at: new Date().toISOString(),
-    }).eq('character_id', character_id);
-
-    console.log(`[Update] Completed sync for character ${character_id}`);
+    console.log(`[MemberAudit] Sync completed for character ${character_id}`);
 
     return new Response(
       JSON.stringify({
-        success: errors.length === 0,
+        success: !hasErrors,
         character_id,
         results,
-        errors,
+        timestamp: new Date().toISOString(),
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('[Update] Fatal error:', error);
+
+  } catch (error: any) {
+    console.error('[MemberAudit] Error:', error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
   }
