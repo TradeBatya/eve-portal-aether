@@ -33,3 +33,9 @@ verify_jwt = false
 [functions.universe-resolver]
 verify_jwt = false
 
+[functions.esi-token-refresh]
+verify_jwt = false
+
+[functions.esi-core-proxy]
+verify_jwt = false
+
