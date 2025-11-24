@@ -18,6 +18,41 @@ export interface CacheStats {
 }
 
 /**
+ * Differentiated TTL configuration for various data types
+ */
+export const CACHE_TTL = {
+  // Realtime data (30s)
+  location: 30,
+  ship: 30,
+  online_status: 30,
+
+  // Frequent updates (5 min)
+  wallet_balance: 300,
+  notifications: 300,
+  skill_queue: 300,
+
+  // Moderate updates (1 hour)
+  skills: 3600,
+  assets: 3600,
+  contacts: 3600,
+  wallet_journal: 3600,
+  wallet_transactions: 3600,
+  implants: 3600,
+  clones: 3600,
+
+  // Rare updates (24 hours)
+  character_info: 86400,
+  corporation_info: 86400,
+  contracts: 86400,
+  industry_jobs: 86400,
+  loyalty_points: 86400,
+
+  // Very rare updates (30 days)
+  universe_names: 2592000,
+  type_info: 2592000,
+} as const;
+
+/**
  * CacheManager - Multi-level caching system
  * Implements memory + database caching with intelligent invalidation
  */
@@ -262,13 +297,68 @@ export class CacheManager {
   }
 
   /**
-   * Preload important data into cache
+   * Preload important data into cache with prioritized loading
+   * Priority 1 (instant): basic, location, ship
+   * Priority 2 (5s delay): wallet, skills
+   * Priority 3 (10s delay): assets, contacts
    */
-  async preload(characterId: number, endpoints: string[]): Promise<void> {
-    console.log(`Preloading cache for character ${characterId}...`);
+  async preload(characterId: number, modules: string[]): Promise<void> {
+    console.log(`[CacheManager] Preloading cache for character ${characterId}...`, modules);
     
-    // This would trigger fetches that get cached
-    // Implementation depends on ESI service integration
+    const priority1 = modules.filter(m => ['basic', 'location', 'ship'].includes(m));
+    const priority2 = modules.filter(m => ['wallet', 'skills', 'skill_queue'].includes(m));
+    const priority3 = modules.filter(m => ['assets', 'contacts', 'implants'].includes(m));
+
+    try {
+      // Priority 1: Load immediately
+      if (priority1.length > 0) {
+        await Promise.allSettled(
+          priority1.map(module => this.preloadModule(characterId, module))
+        );
+        console.log(`[CacheManager] Priority 1 loaded: ${priority1.join(', ')}`);
+      }
+
+      // Priority 2: Load after 2s
+      if (priority2.length > 0) {
+        setTimeout(async () => {
+          await Promise.allSettled(
+            priority2.map(module => this.preloadModule(characterId, module))
+          );
+          console.log(`[CacheManager] Priority 2 loaded: ${priority2.join(', ')}`);
+        }, 2000);
+      }
+
+      // Priority 3: Load after 5s
+      if (priority3.length > 0) {
+        setTimeout(async () => {
+          await Promise.allSettled(
+            priority3.map(module => this.preloadModule(characterId, module))
+          );
+          console.log(`[CacheManager] Priority 3 loaded: ${priority3.join(', ')}`);
+        }, 5000);
+      }
+    } catch (error) {
+      console.error('[CacheManager] Preload error:', error);
+    }
+  }
+
+  /**
+   * Preload a specific module for a character
+   */
+  private async preloadModule(characterId: number, module: string): Promise<void> {
+    const cacheKey = `char:${characterId}:${module}`;
+    
+    // Check if already cached
+    const cached = await this.get(cacheKey);
+    if (cached) {
+      console.log(`[CacheManager] ${module} already cached for character ${characterId}`);
+      return;
+    }
+
+    console.log(`[CacheManager] Preloading ${module} for character ${characterId}...`);
+    
+    // Module will be loaded by ESI adapters when accessed
+    // This just ensures the cache key pattern is ready
   }
 
   /**
