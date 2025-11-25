@@ -18,6 +18,7 @@ import { MemberAuditImplants } from './memberaudit/MemberAuditImplants';
 import { MemberAuditContracts } from './memberaudit/MemberAuditContracts';
 import { MemberAuditIndustry } from './memberaudit/MemberAuditIndustry';
 import { MemberAuditLoyalty } from './memberaudit/MemberAuditLoyalty';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -204,39 +205,55 @@ export const MemberAudit = () => {
         </TabsList>
 
         <TabsContent value="overview">
-          <MemberAuditOverview 
-            characterId={selectedCharacterId} 
-            character={selectedCharacter}
-            metadata={metadata}
-          />
+          <ErrorBoundary fallbackTitle="Failed to load Overview">
+            <MemberAuditOverview 
+              characterId={selectedCharacterId} 
+              character={selectedCharacter}
+              metadata={metadata}
+            />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="skills">
-          <MemberAuditSkills characterId={selectedCharacterId} />
+          <ErrorBoundary fallbackTitle="Failed to load Skills">
+            <MemberAuditSkills characterId={selectedCharacterId} />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="wallet">
-          <MemberAuditWallet characterId={selectedCharacterId} />
+          <ErrorBoundary fallbackTitle="Failed to load Wallet">
+            <MemberAuditWallet characterId={selectedCharacterId} />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="contacts">
-          <MemberAuditContacts characterId={selectedCharacterId} />
+          <ErrorBoundary fallbackTitle="Failed to load Contacts">
+            <MemberAuditContacts characterId={selectedCharacterId} />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="implants">
-          <MemberAuditImplants characterId={selectedCharacterId} />
+          <ErrorBoundary fallbackTitle="Failed to load Implants">
+            <MemberAuditImplants characterId={selectedCharacterId} />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="contracts">
-          <MemberAuditContracts characterId={selectedCharacterId} />
+          <ErrorBoundary fallbackTitle="Failed to load Contracts">
+            <MemberAuditContracts characterId={selectedCharacterId} />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="industry">
-          <MemberAuditIndustry characterId={selectedCharacterId} />
+          <ErrorBoundary fallbackTitle="Failed to load Industry">
+            <MemberAuditIndustry characterId={selectedCharacterId} />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="loyalty">
-          <MemberAuditLoyalty characterId={selectedCharacterId} />
+          <ErrorBoundary fallbackTitle="Failed to load Loyalty">
+            <MemberAuditLoyalty characterId={selectedCharacterId} />
+          </ErrorBoundary>
         </TabsContent>
       </Tabs>
     </div>
