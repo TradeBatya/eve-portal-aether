@@ -18,6 +18,7 @@ import { MemberAuditImplants } from './memberaudit/MemberAuditImplants';
 import { MemberAuditContracts } from './memberaudit/MemberAuditContracts';
 import { MemberAuditIndustry } from './memberaudit/MemberAuditIndustry';
 import { MemberAuditLoyalty } from './memberaudit/MemberAuditLoyalty';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

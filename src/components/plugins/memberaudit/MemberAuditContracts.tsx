@@ -1,16 +1,23 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useMemberAuditContracts } from '@/hooks/useMemberAudit';
+import { useContracts } from '@/hooks/useContracts';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { FileText } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { FileText, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useState } from 'react';
 
 interface MemberAuditContractsProps {
   characterId: number | null;
 }
 
 export const MemberAuditContracts = ({ characterId }: MemberAuditContractsProps) => {
-  const { data: contracts = [], isLoading } = useMemberAuditContracts(characterId || undefined);
+  const { contracts, loading, error, fetchContracts, getActiveContracts, getContractValue } = useContracts(characterId || undefined, {
+    enabled: !!characterId,
+    autoRefresh: true,
+    refreshInterval: 900000, // 15 minutes
+  });
+  const [lastSynced, setLastSynced] = useState<Date>(new Date());
 
   if (!characterId) {
     return (
@@ -31,20 +38,54 @@ export const MemberAuditContracts = ({ characterId }: MemberAuditContractsProps)
     }
   };
 
+  const handleRefresh = async () => {
+    await fetchContracts();
+    setLastSynced(new Date());
+  };
+
+  const activeContracts = getActiveContracts();
+  const totalValue = getContractValue();
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Contracts
-        </CardTitle>
-        <CardDescription>{contracts.length} contracts</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Contracts
+            </CardTitle>
+            <CardDescription>
+              {contracts.length} total • {activeContracts.length} active • {totalValue.toLocaleString()} ISK value
+              {lastSynced && (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  • Last synced {formatDistanceToNow(lastSynced, { addSuffix: true })}
+                </span>
+              )}
+            </CardDescription>
+          </div>
+          <RefreshCw 
+            className={`h-4 w-4 cursor-pointer text-muted-foreground hover:text-foreground transition-colors ${loading ? 'animate-spin' : ''}`}
+            onClick={handleRefresh}
+          />
+        </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <p className="text-muted-foreground text-center py-4">Loading...</p>
+        {loading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-[400px] w-full" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-8 text-destructive">
+            <p className="font-medium">Failed to load contracts</p>
+            <p className="text-sm text-muted-foreground mt-1">{error}</p>
+          </div>
         ) : contracts.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">No contracts</p>
+          <div className="text-center py-12">
+            <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+            <p className="text-muted-foreground font-medium">No contracts yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Contracts will appear here once synced</p>
+          </div>
         ) : (
           <Table>
             <TableHeader>

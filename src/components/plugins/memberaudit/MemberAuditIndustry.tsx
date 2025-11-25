@@ -1,16 +1,23 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useMemberAuditIndustryJobs } from '@/hooks/useMemberAudit';
+import { useIndustryJobs } from '@/hooks/useIndustryJobs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Factory } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Factory, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useState } from 'react';
 
 interface MemberAuditIndustryProps {
   characterId: number | null;
 }
 
 export const MemberAuditIndustry = ({ characterId }: MemberAuditIndustryProps) => {
-  const { data: jobs = [], isLoading } = useMemberAuditIndustryJobs(characterId || undefined);
+  const { jobs, loading, error, fetchJobs, getActiveJobs, getTotalCost } = useIndustryJobs(characterId || undefined, {
+    enabled: !!characterId,
+    autoRefresh: true,
+    refreshInterval: 300000, // 5 minutes
+  });
+  const [lastSynced, setLastSynced] = useState<Date>(new Date());
 
   if (!characterId) {
     return (
@@ -31,20 +38,54 @@ export const MemberAuditIndustry = ({ characterId }: MemberAuditIndustryProps) =
     }
   };
 
+  const handleRefresh = async () => {
+    await fetchJobs();
+    setLastSynced(new Date());
+  };
+
+  const activeJobs = getActiveJobs();
+  const totalCost = getTotalCost();
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Factory className="h-5 w-5" />
-          Industry Jobs
-        </CardTitle>
-        <CardDescription>{jobs.length} jobs</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Factory className="h-5 w-5" />
+              Industry Jobs
+            </CardTitle>
+            <CardDescription>
+              {jobs.length} total • {activeJobs.length} active • {totalCost.toLocaleString()} ISK cost
+              {lastSynced && (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  • Last synced {formatDistanceToNow(lastSynced, { addSuffix: true })}
+                </span>
+              )}
+            </CardDescription>
+          </div>
+          <RefreshCw 
+            className={`h-4 w-4 cursor-pointer text-muted-foreground hover:text-foreground transition-colors ${loading ? 'animate-spin' : ''}`}
+            onClick={handleRefresh}
+          />
+        </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <p className="text-muted-foreground text-center py-4">Loading...</p>
+        {loading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-[400px] w-full" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-8 text-destructive">
+            <p className="font-medium">Failed to load industry jobs</p>
+            <p className="text-sm text-muted-foreground mt-1">{error}</p>
+          </div>
         ) : jobs.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">No industry jobs</p>
+          <div className="text-center py-12">
+            <Factory className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+            <p className="text-muted-foreground font-medium">No industry jobs yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Industry jobs will appear here once synced</p>
+          </div>
         ) : (
           <Table>
             <TableHeader>
