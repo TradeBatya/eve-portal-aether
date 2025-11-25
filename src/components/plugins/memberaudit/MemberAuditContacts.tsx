@@ -1,21 +1,28 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useMemberAuditContacts } from '@/hooks/useMemberAudit';
+import { useContacts } from '@/hooks/useContacts';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Eye, Ban, Search } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Users, Eye, Ban, Search, RefreshCw } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 interface MemberAuditContactsProps {
   characterId: number | null;
 }
 
 export const MemberAuditContacts = ({ characterId }: MemberAuditContactsProps) => {
-  const { data: contacts = [], isLoading } = useMemberAuditContacts(characterId || undefined);
+  const { contacts, loading, error, fetchContacts, searchContacts, getContactsByType } = useContacts(characterId || undefined, {
+    enabled: !!characterId,
+    autoRefresh: true,
+    refreshInterval: 3600000, // 1 hour
+  });
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [lastSynced, setLastSynced] = useState<Date>(new Date());
 
   // Get unique contact types
   const contactTypes = useMemo(() => {
@@ -25,12 +32,23 @@ export const MemberAuditContacts = ({ characterId }: MemberAuditContactsProps) =
 
   // Filter contacts
   const filteredContacts = useMemo(() => {
-    return contacts.filter(contact => {
-      const matchesSearch = contact.contact_name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesType = selectedType === 'all' || contact.contact_type === selectedType;
-      return matchesSearch && matchesType;
-    });
-  }, [contacts, searchQuery, selectedType]);
+    let filtered = contacts;
+    
+    if (searchQuery) {
+      filtered = searchContacts(searchQuery);
+    }
+    
+    if (selectedType !== 'all') {
+      filtered = getContactsByType(selectedType);
+    }
+    
+    return filtered;
+  }, [contacts, searchQuery, selectedType, searchContacts, getContactsByType]);
+
+  const handleRefresh = async () => {
+    await fetchContacts();
+    setLastSynced(new Date());
+  };
 
   if (!characterId) {
     return (
@@ -67,8 +85,19 @@ export const MemberAuditContacts = ({ characterId }: MemberAuditContactsProps) =
               <Users className="h-5 w-5" />
               Contacts
             </CardTitle>
-            <CardDescription>{filteredContacts.length} of {contacts.length} contacts</CardDescription>
+            <CardDescription>
+              {filteredContacts.length} of {contacts.length} contacts
+              {lastSynced && (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  • Last synced {formatDistanceToNow(lastSynced, { addSuffix: true })}
+                </span>
+              )}
+            </CardDescription>
           </div>
+          <RefreshCw 
+            className={`h-4 w-4 cursor-pointer text-muted-foreground hover:text-foreground transition-colors ${loading ? 'animate-spin' : ''}`}
+            onClick={handleRefresh}
+          />
         </div>
         <div className="flex gap-2 mt-4">
           <div className="relative flex-1">
@@ -96,12 +125,31 @@ export const MemberAuditContacts = ({ characterId }: MemberAuditContactsProps) =
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <p className="text-muted-foreground text-center py-4">Loading...</p>
+        {loading ? (
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+            <Skeleton className="h-[400px] w-full" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-8 text-destructive">
+            <p className="font-medium">Failed to load contacts</p>
+            <p className="text-sm text-muted-foreground mt-1">{error}</p>
+          </div>
         ) : filteredContacts.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">
-            {searchQuery || selectedType !== 'all' ? 'No contacts match your filters' : 'No contacts'}
-          </p>
+          <div className="text-center py-12">
+            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+            <p className="text-muted-foreground font-medium">
+              {searchQuery || selectedType !== 'all' ? 'No contacts match your filters' : 'No contacts yet'}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {searchQuery || selectedType !== 'all' 
+                ? 'Try adjusting your search or filters' 
+                : 'Contacts will appear here once synced'}
+            </p>
+          </div>
         ) : (
           <Table>
             <TableHeader>
