@@ -1,16 +1,38 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useMemberAuditIndustryJobs } from '@/hooks/useMemberAudit';
+import { useIndustryJobs } from '@/hooks/useIndustryJobs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Factory } from 'lucide-react';
+import { Factory, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface MemberAuditIndustryProps {
   characterId: number | null;
 }
 
 export const MemberAuditIndustry = ({ characterId }: MemberAuditIndustryProps) => {
-  const { data: jobs = [], isLoading } = useMemberAuditIndustryJobs(characterId || undefined);
+  const { jobs, loading, error, fetchJobs, getActiveJobs, getJobsByActivity, getTotalCost } = useIndustryJobs(
+    characterId || undefined,
+    { enabled: !!characterId, autoRefresh: true, refreshInterval: 300000 }
+  );
+
+  const [lastSynced, setLastSynced] = useState<Date>(new Date());
+
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    switch (status) {
+      case 'active': return 'default';
+      case 'ready': return 'secondary';
+      case 'delivered': return 'outline';
+      default: return 'destructive';
+    }
+  };
+
+  const handleRefresh = async () => {
+    await fetchJobs();
+    setLastSynced(new Date());
+  };
 
   if (!characterId) {
     return (
@@ -22,29 +44,58 @@ export const MemberAuditIndustry = ({ characterId }: MemberAuditIndustryProps) =
     );
   }
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'ready': return 'secondary';
-      case 'delivered': return 'outline';
-      default: return 'destructive';
-    }
-  };
+  const activeJobs = getActiveJobs();
+  const jobsByActivity = getJobsByActivity();
+  const totalCost = getTotalCost();
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Factory className="h-5 w-5" />
-          Industry Jobs
-        </CardTitle>
-        <CardDescription>{jobs.length} jobs</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Factory className="h-5 w-5" />
+              Industry Jobs
+            </CardTitle>
+            <CardDescription>
+              {jobs.length} jobs • {activeJobs.length} active • {totalCost.toLocaleString()} ISK invested
+              {lastSynced && (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  • Last synced {formatDistanceToNow(lastSynced, { addSuffix: true })}
+                </span>
+              )}
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <p className="text-muted-foreground text-center py-4">Loading...</p>
+        {loading ? (
+          <div className="space-y-2">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-destructive mb-2">Failed to load industry jobs</p>
+            <p className="text-sm text-muted-foreground mb-4">{error}</p>
+            <Button onClick={handleRefresh} variant="outline" size="sm">
+              Try Again
+            </Button>
+          </div>
         ) : jobs.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">No industry jobs</p>
+          <div className="text-center py-8">
+            <Factory className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+            <p className="text-muted-foreground">No industry jobs found</p>
+          </div>
         ) : (
           <Table>
             <TableHeader>

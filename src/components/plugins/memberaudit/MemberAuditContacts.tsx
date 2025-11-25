@@ -1,36 +1,64 @@
-import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useMemberAuditContacts } from '@/hooks/useMemberAudit';
+import { useContacts } from '@/hooks/useContacts';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Eye, Ban, Search } from 'lucide-react';
+import { Users, RefreshCw } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface MemberAuditContactsProps {
   characterId: number | null;
 }
 
 export const MemberAuditContacts = ({ characterId }: MemberAuditContactsProps) => {
-  const { data: contacts = [], isLoading } = useMemberAuditContacts(characterId || undefined);
-  
+  const { contacts, loading, error, fetchContacts, searchContacts, getContactsByType } = useContacts(
+    characterId || undefined,
+    { enabled: !!characterId, autoRefresh: true, refreshInterval: 3600000 }
+  );
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [lastSynced, setLastSynced] = useState<Date>(new Date());
 
-  // Get unique contact types
   const contactTypes = useMemo(() => {
     const types = new Set(contacts.map(c => c.contact_type));
-    return Array.from(types).sort();
+    return ['all', ...Array.from(types)];
   }, [contacts]);
 
-  // Filter contacts
   const filteredContacts = useMemo(() => {
-    return contacts.filter(contact => {
-      const matchesSearch = contact.contact_name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesType = selectedType === 'all' || contact.contact_type === selectedType;
-      return matchesSearch && matchesType;
-    });
-  }, [contacts, searchQuery, selectedType]);
+    let result = searchQuery ? searchContacts(searchQuery) : contacts;
+    if (selectedType !== 'all') {
+      result = getContactsByType(selectedType);
+    }
+    return result;
+  }, [contacts, searchQuery, selectedType, searchContacts, getContactsByType]);
+
+  const getStandingColor = (standing: number): string => {
+    if (standing >= 5) return 'text-blue-500';
+    if (standing > 0) return 'text-green-500';
+    if (standing === 0) return 'text-muted-foreground';
+    if (standing > -5) return 'text-orange-500';
+    return 'text-destructive';
+  };
+
+  const getStandingLabel = (standing: number): string => {
+    if (standing >= 10) return 'Excellent';
+    if (standing >= 5) return 'Good';
+    if (standing > 0) return 'Neutral+';
+    if (standing === 0) return 'Neutral';
+    if (standing > -5) return 'Bad';
+    if (standing > -10) return 'Terrible';
+    return 'Hostile';
+  };
+
+  const handleRefresh = async () => {
+    await fetchContacts();
+    setLastSynced(new Date());
+  };
 
   if (!characterId) {
     return (
@@ -42,22 +70,6 @@ export const MemberAuditContacts = ({ characterId }: MemberAuditContactsProps) =
     );
   }
 
-  const getStandingColor = (standing: number) => {
-    if (standing >= 5) return 'text-blue-600';
-    if (standing > 0) return 'text-green-600';
-    if (standing === 0) return 'text-muted-foreground';
-    if (standing >= -5) return 'text-orange-600';
-    return 'text-red-600';
-  };
-
-  const getStandingLabel = (standing: number) => {
-    if (standing >= 5) return 'Excellent';
-    if (standing > 0) return 'Good';
-    if (standing === 0) return 'Neutral';
-    if (standing >= -5) return 'Bad';
-    return 'Terrible';
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -67,28 +79,39 @@ export const MemberAuditContacts = ({ characterId }: MemberAuditContactsProps) =
               <Users className="h-5 w-5" />
               Contacts
             </CardTitle>
-            <CardDescription>{filteredContacts.length} of {contacts.length} contacts</CardDescription>
+            <CardDescription>
+              {filteredContacts.length} contacts
+              {lastSynced && (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  • Last synced {formatDistanceToNow(lastSynced, { addSuffix: true })}
+                </span>
+              )}
+            </CardDescription>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
         <div className="flex gap-2 mt-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search contacts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+          <Input
+            placeholder="Search contacts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-sm"
+          />
           <Select value={selectedType} onValueChange={setSelectedType}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All types" />
+              <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              {contactTypes.map(type => (
-                <SelectItem key={type} value={type} className="capitalize">
-                  {type.replace('_', ' ')}
+              {contactTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type === 'all' ? 'All Types' : type}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -96,12 +119,29 @@ export const MemberAuditContacts = ({ characterId }: MemberAuditContactsProps) =
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <p className="text-muted-foreground text-center py-4">Loading...</p>
+        {loading ? (
+          <div className="space-y-2">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-destructive mb-2">Failed to load contacts</p>
+            <p className="text-sm text-muted-foreground mb-4">{error}</p>
+            <Button onClick={handleRefresh} variant="outline" size="sm">
+              Try Again
+            </Button>
+          </div>
         ) : filteredContacts.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">
-            {searchQuery || selectedType !== 'all' ? 'No contacts match your filters' : 'No contacts'}
-          </p>
+          <div className="text-center py-8">
+            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+            <p className="text-muted-foreground">
+              {searchQuery || selectedType !== 'all' 
+                ? 'No contacts found matching your filters' 
+                : 'No contacts yet'}
+            </p>
+          </div>
         ) : (
           <Table>
             <TableHeader>
@@ -123,7 +163,7 @@ export const MemberAuditContacts = ({ characterId }: MemberAuditContactsProps) =
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <span className={`font-mono font-semibold ${getStandingColor(contact.standing)}`}>
+                      <span className={`font-mono ${getStandingColor(contact.standing)}`}>
                         {contact.standing.toFixed(1)}
                       </span>
                       <Badge variant="secondary" className="text-xs">
@@ -134,16 +174,10 @@ export const MemberAuditContacts = ({ characterId }: MemberAuditContactsProps) =
                   <TableCell>
                     <div className="flex gap-1">
                       {contact.is_watched && (
-                        <Badge variant="outline" className="gap-1">
-                          <Eye className="h-3 w-3" />
-                          Watched
-                        </Badge>
+                        <Badge variant="default" className="text-xs">Watched</Badge>
                       )}
                       {contact.is_blocked && (
-                        <Badge variant="destructive" className="gap-1">
-                          <Ban className="h-3 w-3" />
-                          Blocked
-                        </Badge>
+                        <Badge variant="destructive" className="text-xs">Blocked</Badge>
                       )}
                     </div>
                   </TableCell>
