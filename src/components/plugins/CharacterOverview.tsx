@@ -48,11 +48,11 @@ export const CharacterOverview = () => {
     queryFn: async () => {
       if (!mainCharacter?.character_id) return null;
       
-      const { data, error } = await supabase
+        const { data, error } = await supabase
         .from('member_audit_metadata')
         .select('*')
         .eq('character_id', mainCharacter.character_id)
-        .single();
+        .maybeSingle();
 
       if (error) return null;
       return data;
@@ -214,10 +214,10 @@ export const CharacterOverview = () => {
               {t.wallet}
             </div>
             <div className="font-semibold">
-              {balance === undefined ? (
+              {!balance || balance.balance === undefined || balance.balance === null ? (
                 <Skeleton className="h-4 w-24" />
               ) : (
-                `${balance.toLocaleString()} ISK`
+                `${balance.balance.toLocaleString()} ISK`
               )}
             </div>
           </div>
