@@ -41,26 +41,38 @@ export class MemberAuditAdapter extends BaseAdapter {
    * Refresh character data and update database
    */
   async refreshCharacterData(characterId: number): Promise<void> {
+    console.log(`[MemberAuditAdapter] Starting refresh for character ${characterId}`);
     try {
       // Clear memory cache to force fresh data
+      console.log('[MemberAuditAdapter] Clearing memory cache...');
       this.esiService.clearCache('memory');
       
       // Fetch fresh data
+      console.log('[MemberAuditAdapter] Fetching complete audit data...');
       const auditData = await this.getCompleteAuditData(characterId);
+      console.log('[MemberAuditAdapter] Audit data fetched:', Object.keys(auditData));
 
       // Update member_audit_metadata
+      console.log('[MemberAuditAdapter] Updating metadata...');
       await this.updateMetadata(characterId, auditData);
 
       // Update specific tables
+      console.log('[MemberAuditAdapter] Updating skills...');
       await this.updateSkills(characterId, auditData.skills);
+      
+      console.log('[MemberAuditAdapter] Updating skill queue...');
       await this.updateSkillQueue(characterId, auditData.skillQueue);
+      
+      console.log('[MemberAuditAdapter] Updating implants...');
       await this.updateImplants(characterId, auditData.implants);
+      
+      console.log('[MemberAuditAdapter] Updating contacts...');
       await this.updateContacts(characterId, auditData.contacts);
 
-      console.log(`Successfully refreshed data for character ${characterId}`);
-    } catch (error) {
-      console.error('Failed to refresh character data:', error);
-      throw error;
+      console.log(`[MemberAuditAdapter] Successfully refreshed data for character ${characterId}`);
+    } catch (error: any) {
+      console.error('[MemberAuditAdapter] Failed to refresh character data:', error);
+      throw new Error(`Refresh failed: ${error.message}`);
     }
   }
 
@@ -68,9 +80,24 @@ export class MemberAuditAdapter extends BaseAdapter {
    * Update member_audit_metadata table
    */
   private async updateMetadata(characterId: number, auditData: any): Promise<void> {
+    console.log(`[MemberAuditAdapter] Preparing metadata for character ${characterId}`);
+    
+    // Get user_id from eve_characters table
+    const { data: charData, error: charError } = await supabase
+      .from('eve_characters')
+      .select('user_id')
+      .eq('character_id', characterId)
+      .maybeSingle();
+
+    if (charError || !charData) {
+      console.error('[MemberAuditAdapter] Failed to get user_id:', charError);
+      throw new Error('Failed to get user_id for character');
+    }
+
     const metadata: any = {
       character_id: characterId,
-      security_status: auditData.basic?.security_status,
+      user_id: charData.user_id,
+      security_status: auditData.basic?.security_status ?? null,
       total_sp: auditData.skills?.total_sp || 0,
       unallocated_sp: auditData.skills?.unallocated_sp || 0,
       wallet_balance: auditData.wallet || 0,
@@ -110,20 +137,23 @@ export class MemberAuditAdapter extends BaseAdapter {
 
       if (assetRecords) {
         const totalValue = assetRecords.reduce((sum: number, asset: any) => {
-          return sum + (asset.estimated_value || 0) * (asset.quantity || 1);
+          return sum + ((asset.estimated_value || 0) * (asset.quantity || 1));
         }, 0);
         metadata.total_assets_value = totalValue;
       }
     }
 
+    console.log('[MemberAuditAdapter] Writing metadata to database...');
     const { error } = await supabase
       .from('member_audit_metadata')
       .upsert(metadata, { onConflict: 'character_id' });
 
     if (error) {
-      console.error('Failed to update metadata:', error);
+      console.error('[MemberAuditAdapter] Failed to update metadata:', error);
       throw error;
     }
+    
+    console.log('[MemberAuditAdapter] Metadata updated successfully');
   }
 
   /**

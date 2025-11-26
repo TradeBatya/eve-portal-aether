@@ -179,7 +179,15 @@ export class CacheManager {
         .gt('expires_at', new Date().toISOString())
         .maybeSingle();
 
-      if (error || !data) return null;
+      if (error) {
+        console.error(`[CacheManager] DB cache read error for key ${key}:`, error);
+        return null;
+      }
+
+      if (!data) {
+        console.log(`[CacheManager] Cache miss (DB) for key: ${key}`);
+        return null;
+      }
 
       // Update access count
       await supabase
@@ -190,10 +198,11 @@ export class CacheManager {
         })
         .eq('cache_key', key);
 
+      console.log(`[CacheManager] Cache hit (DB) for key: ${key}`);
       return data.data as T;
 
     } catch (error) {
-      console.error('Cache DB read error:', error);
+      console.error('[CacheManager] DB cache exception:', error);
       return null;
     }
   }
@@ -205,10 +214,10 @@ export class CacheManager {
     options: { tags?: string[]; priority?: number }
   ): Promise<void> {
     try {
-      const endpoint = key.split(':')[0] || 'unknown';
+      const endpoint = key.split(':')[1] || 'unknown';
       const characterId = this.extractCharacterId(key);
 
-      await supabase
+      const { error } = await supabase
         .from('esi_service_cache')
         .upsert({
           cache_key: key,
@@ -221,8 +230,14 @@ export class CacheManager {
           access_count: 0
         });
 
+      if (error) {
+        console.error(`[CacheManager] Failed to write cache for key ${key}:`, error);
+      } else {
+        console.log(`[CacheManager] Cache written (DB) for key: ${key}`);
+      }
+
     } catch (error) {
-      console.error('Cache DB write error:', error);
+      console.error('[CacheManager] DB cache write exception:', error);
     }
   }
 
