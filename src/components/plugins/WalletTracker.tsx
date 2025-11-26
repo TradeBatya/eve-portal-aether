@@ -24,7 +24,7 @@ export const WalletTracker = () => {
         .select('*')
         .eq('user_id', user.id)
         .eq('is_main', true)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;

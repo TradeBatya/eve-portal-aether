@@ -10,6 +10,7 @@ import { AssetManager } from "@/components/plugins/AssetManager";
 import { MemberAudit } from "@/components/plugins/MemberAudit";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const PluginsWidget = () => {
   const { user } = useAuth();
@@ -33,20 +34,28 @@ export const PluginsWidget = () => {
   }[language];
 
   const renderPlugin = (pluginId: string) => {
-    switch (pluginId) {
-      case 'character-overview':
-        return <CharacterOverview key={pluginId} />;
-      case 'skill-monitor':
-        return <SkillMonitor key={pluginId} />;
-      case 'wallet-tracker':
-        return <WalletTracker key={pluginId} />;
-      case 'asset-manager':
-        return <AssetManager key={pluginId} />;
-      case 'member-audit':
-        return <MemberAudit key={pluginId} />;
-      default:
-        return null;
-    }
+    const pluginComponent = (() => {
+      switch (pluginId) {
+        case 'character-overview':
+          return <CharacterOverview />;
+        case 'skill-monitor':
+          return <SkillMonitor />;
+        case 'wallet-tracker':
+          return <WalletTracker />;
+        case 'asset-manager':
+          return <AssetManager />;
+        case 'member-audit':
+          return <MemberAudit />;
+        default:
+          return null;
+      }
+    })();
+
+    return (
+      <ErrorBoundary key={pluginId} fallbackTitle={`Plugin Error: ${pluginId}`}>
+        {pluginComponent}
+      </ErrorBoundary>
+    );
   };
 
   const getPluginIcon = (pluginId: string) => {

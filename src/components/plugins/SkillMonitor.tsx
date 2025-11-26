@@ -25,7 +25,7 @@ export const SkillMonitor = () => {
         .select('*')
         .eq('user_id', user.id)
         .eq('is_main', true)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -165,7 +165,7 @@ export const SkillMonitor = () => {
           
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">
-              {trainedSp.toLocaleString()} / {totalSp.toLocaleString()} {t.sp}
+              {(trainedSp ?? 0).toLocaleString()} / {(totalSp ?? 0).toLocaleString()} {t.sp}
             </span>
             <span className="flex items-center gap-1 text-primary font-medium">
               <Clock className="w-4 h-4" />
