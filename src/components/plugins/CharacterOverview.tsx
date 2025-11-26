@@ -65,22 +65,29 @@ export const CharacterOverview = () => {
     
     setIsRefreshing(true);
     try {
+      console.log('[CharacterOverview] Starting full refresh for character', mainCharacter.character_id);
+      
       // Use MemberAuditAdapter for full refresh
       await memberAuditAdapter.refreshCharacterData(mainCharacter.character_id);
+      
+      console.log('[CharacterOverview] Invalidating queries...');
       await queryClient.invalidateQueries({ queryKey: ['member-audit-metadata'] });
       await queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      
+      console.log('[CharacterOverview] Refresh completed successfully');
       toast({
         title: language === 'en' ? 'Success' : 'Успешно',
         description: language === 'en' 
           ? 'Character data refreshed successfully' 
           : 'Данные персонажа успешно обновлены',
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[CharacterOverview] Refresh error:', error);
       toast({
         title: language === 'en' ? 'Error' : 'Ошибка',
-        description: language === 'en' 
+        description: error.message || (language === 'en' 
           ? 'Failed to refresh character data' 
-          : 'Не удалось обновить данные персонажа',
+          : 'Не удалось обновить данные персонажа'),
         variant: 'destructive',
       });
     } finally {
