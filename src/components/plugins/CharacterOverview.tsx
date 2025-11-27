@@ -40,7 +40,7 @@ export const CharacterOverview = () => {
   const mainCharacter = characters?.find(c => c.is_main) || characters?.[0];
 
   // Use new hooks for data fetching
-  const { balance } = useWallet(mainCharacter?.character_id);
+  const { balance, loading: walletLoading } = useWallet(mainCharacter?.character_id);
 
   // Get Member Audit metadata for location and ship info
   const { data: metadata } = useQuery({
@@ -221,10 +221,14 @@ export const CharacterOverview = () => {
               {t.wallet}
             </div>
             <div className="font-semibold">
-              {!balance || balance.balance === undefined || balance.balance === null ? (
+              {walletLoading ? (
                 <Skeleton className="h-4 w-24" />
+              ) : balance?.balance !== undefined && balance?.balance !== null ? (
+                `${Number(balance.balance).toLocaleString()} ISK`
+              ) : metadata?.wallet_balance !== undefined && metadata?.wallet_balance !== null ? (
+                `${Number(metadata.wallet_balance).toLocaleString()} ISK`
               ) : (
-                `${balance.balance.toLocaleString()} ISK`
+                '0 ISK'
               )}
             </div>
           </div>

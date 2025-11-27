@@ -617,6 +617,54 @@ export type Database = {
         }
         Relationships: []
       }
+      member_audit_assets: {
+        Row: {
+          character_id: number
+          created_at: string | null
+          id: string
+          is_blueprint_copy: boolean | null
+          is_singleton: boolean | null
+          item_id: number
+          last_updated: string | null
+          location_id: number
+          location_name: string | null
+          location_type: string | null
+          quantity: number
+          type_id: number
+          type_name: string | null
+        }
+        Insert: {
+          character_id: number
+          created_at?: string | null
+          id?: string
+          is_blueprint_copy?: boolean | null
+          is_singleton?: boolean | null
+          item_id: number
+          last_updated?: string | null
+          location_id: number
+          location_name?: string | null
+          location_type?: string | null
+          quantity?: number
+          type_id: number
+          type_name?: string | null
+        }
+        Update: {
+          character_id?: number
+          created_at?: string | null
+          id?: string
+          is_blueprint_copy?: boolean | null
+          is_singleton?: boolean | null
+          item_id?: number
+          last_updated?: string | null
+          location_id?: number
+          location_name?: string | null
+          location_type?: string | null
+          quantity?: number
+          type_id?: number
+          type_name?: string | null
+        }
+        Relationships: []
+      }
       member_audit_clones: {
         Row: {
           character_id: number

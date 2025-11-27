@@ -114,8 +114,15 @@ async function updateSkills(characterId: number, supabase: any): Promise<ModuleR
   const skillsRes = await callEsiProxy(`/characters/${characterId}/skills/`, characterId, supabase);
 
   if (skillsRes.error || !skillsRes.data) {
+    console.error('[Module:Skills] ESI request failed:', skillsRes.error);
     return { success: false, error: skillsRes.error, updated: 0 };
   }
+
+  console.log('[Module:Skills] ESI response:', { 
+    total_sp: skillsRes.data.total_sp, 
+    unallocated_sp: skillsRes.data.unallocated_sp,
+    skills_count: skillsRes.data.skills?.length 
+  });
 
   const skills = skillsRes.data.skills || [];
   const skillIds = skills.map((s: any) => s.skill_id);
@@ -139,10 +146,24 @@ async function updateSkills(characterId: number, supabase: any): Promise<ModuleR
     if (!error) updated++;
   }
 
+  // Get user_id for metadata
+  const { data: charData } = await supabase
+    .from('eve_characters')
+    .select('user_id')
+    .eq('character_id', characterId)
+    .single();
+
+  const totalSp = skillsRes.data.total_sp || 0;
+  const unallocatedSp = skillsRes.data.unallocated_sp || 0;
+
+  console.log(`[Module:Skills] Updating metadata: total_sp=${totalSp}, unallocated_sp=${unallocatedSp}`);
+
   await supabase.from('member_audit_metadata').upsert({
     character_id: characterId,
-    total_sp: skillsRes.data.total_sp || 0,
-    unallocated_sp: skillsRes.data.unallocated_sp || 0,
+    user_id: charData?.user_id,
+    total_sp: totalSp,
+    unallocated_sp: unallocatedSp,
+    last_update_at: new Date().toISOString(),
   }, {
     onConflict: 'character_id',
   });
@@ -198,13 +219,29 @@ async function updateWallet(characterId: number, supabase: any): Promise<ModuleR
   
   const balanceRes = await callEsiProxy(`/characters/${characterId}/wallet/`, characterId, supabase);
 
-  if (!balanceRes.error && balanceRes.data) {
+  if (!balanceRes.error && balanceRes.data !== undefined && balanceRes.data !== null) {
+    const balance = typeof balanceRes.data === 'number' ? balanceRes.data : 0;
+    console.log('[Module:Wallet] Balance response:', balanceRes.data, 'Type:', typeof balanceRes.data, 'Converted:', balance);
+
+    // Get user_id for metadata
+    const { data: charData } = await supabase
+      .from('eve_characters')
+      .select('user_id')
+      .eq('character_id', characterId)
+      .single();
+
     await supabase.from('member_audit_metadata').upsert({
       character_id: characterId,
-      wallet_balance: balanceRes.data,
+      user_id: charData?.user_id,
+      wallet_balance: balance,
+      last_update_at: new Date().toISOString(),
     }, {
       onConflict: 'character_id',
     });
+
+    console.log(`[Module:Wallet] Updated wallet_balance to ${balance}`);
+  } else {
+    console.error('[Module:Wallet] Invalid balance response:', balanceRes);
   }
 
   const journalRes = await callEsiProxy(`/characters/${characterId}/wallet/journal/`, characterId, supabase);
@@ -474,6 +511,48 @@ function getActivityName(activityId: number): string {
   return activities[activityId] || `Activity ${activityId}`;
 }
 
+// MODULE: Assets
+async function updateAssets(characterId: number, supabase: any): Promise<ModuleResult> {
+  console.log('[Module:Assets] Starting update...');
+  
+  const res = await callEsiProxy(`/characters/${characterId}/assets/`, characterId, supabase);
+
+  if (res.error || !res.data) {
+    console.error('[Module:Assets] ESI request failed:', res.error);
+    return { success: false, error: res.error, updated: 0 };
+  }
+
+  console.log(`[Module:Assets] Fetched ${res.data.length} assets`);
+
+  // Resolve type names
+  const typeIds = [...new Set(res.data.map((a: any) => a.type_id))] as number[];
+  const typeNames = await resolveTypeNames(typeIds);
+
+  // Delete old assets
+  await supabase.from('member_audit_assets')
+    .delete()
+    .eq('character_id', characterId);
+
+  let updated = 0;
+  for (const asset of res.data) {
+    const { error } = await supabase.from('member_audit_assets').insert({
+      character_id: characterId,
+      item_id: asset.item_id,
+      type_id: asset.type_id,
+      type_name: typeNames.get(asset.type_id) || `Item ${asset.type_id}`,
+      location_id: asset.location_id,
+      quantity: asset.quantity || 1,
+      is_singleton: asset.is_singleton || false,
+      is_blueprint_copy: asset.is_blueprint_copy || false,
+    });
+
+    if (!error) updated++;
+  }
+
+  console.log(`[Module:Assets] Updated ${updated} assets`);
+  return { success: true, updated };
+}
+
 // MODULE: Loyalty Points
 async function updateLoyaltyPoints(characterId: number, supabase: any): Promise<ModuleResult> {
   console.log('[Module:Loyalty] Starting update...');
@@ -537,7 +616,7 @@ Deno.serve(async (req) => {
 
     const results: Record<string, ModuleResult> = {};
     const enabledModules = modules.includes('all') ? [
-      'skills', 'skillqueue', 'wallet', 'implants', 'clones', 
+      'skills', 'skillqueue', 'wallet', 'assets', 'implants', 'clones', 
       'contacts', 'contracts', 'industry', 'loyalty'
     ] : modules;
 
@@ -553,6 +632,9 @@ Deno.serve(async (req) => {
             break;
           case 'wallet':
             results.wallet = await updateWallet(character_id, supabase);
+            break;
+          case 'assets':
+            results.assets = await updateAssets(character_id, supabase);
             break;
           case 'implants':
             results.implants = await updateImplants(character_id, supabase);

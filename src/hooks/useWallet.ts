@@ -23,10 +23,13 @@ export function useWallet(characterId: number | undefined, options: UseWalletOpt
 
     try {
       const data = await walletAdapter.getBalance(characterId);
-      setBalance(data);
+      console.log('[useWallet] Balance fetched:', data);
+      setBalance(data || { balance: 0, lastUpdated: new Date().toISOString() });
       setError(null);
     } catch (err: any) {
+      console.error('[useWallet] Balance fetch error:', err);
       setError(err.message);
+      setBalance({ balance: 0, lastUpdated: new Date().toISOString() });
     }
   }, [characterId, enabled]);
 
@@ -60,13 +63,19 @@ export function useWallet(characterId: number | undefined, options: UseWalletOpt
     try {
       setLoading(true);
       const data = await walletAdapter.getSummary(characterId);
+      console.log('[useWallet] Summary fetched:', data);
       setSummary(data);
-      setBalance({ balance: data.balance, lastUpdated: data.lastUpdated });
+      setBalance({ 
+        balance: data.balance ?? 0, 
+        lastUpdated: data.lastUpdated 
+      });
       setJournal(data.recentJournal || []);
       setTransactions(data.recentTransactions || []);
       setError(null);
     } catch (err: any) {
+      console.error('[useWallet] Summary fetch error:', err);
       setError(err.message);
+      setBalance({ balance: 0, lastUpdated: new Date().toISOString() });
     } finally {
       setLoading(false);
     }
