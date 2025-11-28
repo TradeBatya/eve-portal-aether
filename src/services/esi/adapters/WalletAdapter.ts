@@ -40,7 +40,14 @@ export interface WalletTransaction {
 export class WalletAdapter extends BaseAdapter {
   
   async getBalance(characterId: number): Promise<WalletBalance> {
-    await this.validateToken(characterId, ['esi-wallet.read_character_wallet.v1']);
+    // Phase 2: Don't block request if scopes missing - Edge Function will validate
+    try {
+      await this.validateToken(characterId, ['esi-wallet.read_character_wallet.v1']);
+    } catch (err) {
+      console.warn('[WalletAdapter] Scope validation warning:', err);
+      // Continue - Edge Function will check permissions
+    }
+    
     this.log(`Fetching balance for character ${characterId}`);
 
     const balance = await this.fetchWithRetry<number>(
@@ -56,7 +63,11 @@ export class WalletAdapter extends BaseAdapter {
   }
 
   async getJournal(characterId: number, fromDate?: Date): Promise<WalletJournalEntry[]> {
-    await this.validateToken(characterId, ['esi-wallet.read_character_wallet.v1']);
+    try {
+      await this.validateToken(characterId, ['esi-wallet.read_character_wallet.v1']);
+    } catch (err) {
+      console.warn('[WalletAdapter] Scope validation warning:', err);
+    }
     this.log(`Fetching wallet journal for character ${characterId}`);
 
     const data = await this.fetchPaginated<any>(
@@ -87,7 +98,11 @@ export class WalletAdapter extends BaseAdapter {
   }
 
   async getTransactions(characterId: number, limit: number = 100): Promise<WalletTransaction[]> {
-    await this.validateToken(characterId, ['esi-wallet.read_character_wallet.v1']);
+    try {
+      await this.validateToken(characterId, ['esi-wallet.read_character_wallet.v1']);
+    } catch (err) {
+      console.warn('[WalletAdapter] Scope validation warning:', err);
+    }
     this.log(`Fetching wallet transactions for character ${characterId}`);
 
     const data = await this.fetchWithRetry<any[]>(
@@ -124,7 +139,11 @@ export class WalletAdapter extends BaseAdapter {
    * Get wallet summary with balance and recent activity
    */
   async getSummary(characterId: number): Promise<any> {
-    await this.validateToken(characterId, ['esi-wallet.read_character_wallet.v1']);
+    try {
+      await this.validateToken(characterId, ['esi-wallet.read_character_wallet.v1']);
+    } catch (err) {
+      console.warn('[WalletAdapter] Scope validation warning:', err);
+    }
     this.log(`Fetching wallet summary for character ${characterId}`);
 
     const [balance, recentJournal, recentTransactions] = await Promise.all([
