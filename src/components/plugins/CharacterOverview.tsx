@@ -67,7 +67,12 @@ export const CharacterOverview = () => {
     try {
       console.log('[CharacterOverview] Starting full refresh for character', mainCharacter.character_id);
       
-      // Use MemberAuditAdapter for full refresh
+      // Phase 3: First sync scopes from eve_characters to esi_service_tokens
+      const { tokenManager } = await import('@/services/esi/TokenManager');
+      await tokenManager.syncScopesFromEveCharacters(mainCharacter.character_id);
+      console.log('[CharacterOverview] Scopes synchronized');
+      
+      // Then refresh character data
       await memberAuditAdapter.refreshCharacterData(mainCharacter.character_id);
       
       console.log('[CharacterOverview] Invalidating queries...');

@@ -209,9 +209,22 @@ export class TokenManager {
 
   /**
    * Sync token from eve_characters to esi_service_tokens
+   * Phase 1: Explicitly sync scopes and reset validation failures
    */
   private async syncToken(characterId: number, charData: any): Promise<void> {
     try {
+      // Get scopes from eve_characters if not provided
+      let scopes = charData.scopes || [];
+      
+      if (!scopes.length) {
+        const { data } = await supabase
+          .from('eve_characters')
+          .select('scopes')
+          .eq('character_id', characterId)
+          .single();
+        scopes = data?.scopes || [];
+      }
+
       await supabase
         .from('esi_service_tokens')
         .upsert({
@@ -219,12 +232,46 @@ export class TokenManager {
           access_token: charData.access_token,
           refresh_token: charData.refresh_token,
           expires_at: charData.expires_at,
-          scopes: charData.scopes,
+          scopes: scopes, // Explicitly set scopes
           token_type: 'Bearer',
-          last_validated_at: new Date().toISOString()
+          last_validated_at: new Date().toISOString(),
+          validation_failures: 0, // Reset failures
+          auto_refresh_enabled: true // Enable auto-refresh
         });
+      
+      console.log(`[TokenManager] Synced token with ${scopes.length} scopes for character ${characterId}`);
     } catch (error) {
       console.error(`Token sync failed for character ${characterId}:`, error);
+    }
+  }
+
+  /**
+   * Manually sync scopes from eve_characters to esi_service_tokens
+   * Phase 1: Public method for manual scope synchronization
+   */
+  async syncScopesFromEveCharacters(characterId: number): Promise<void> {
+    try {
+      const { data } = await supabase
+        .from('eve_characters')
+        .select('scopes')
+        .eq('character_id', characterId)
+        .single();
+
+      if (data?.scopes) {
+        await supabase
+          .from('esi_service_tokens')
+          .update({ 
+            scopes: data.scopes,
+            validation_failures: 0,
+            auto_refresh_enabled: true,
+            last_validated_at: new Date().toISOString()
+          })
+          .eq('character_id', characterId);
+        
+        console.log(`[TokenManager] Manually synced ${data.scopes.length} scopes for character ${characterId}`);
+      }
+    } catch (error) {
+      console.error(`Manual scope sync failed for character ${characterId}:`, error);
     }
   }
 
