@@ -101,7 +101,6 @@ export type Database = {
         Row: {
           character_id: number
           created_at: string | null
-          estimated_value: number | null
           id: string
           is_blueprint_copy: boolean | null
           is_singleton: boolean | null
@@ -119,7 +118,6 @@ export type Database = {
         Insert: {
           character_id: number
           created_at?: string | null
-          estimated_value?: number | null
           id?: string
           is_blueprint_copy?: boolean | null
           is_singleton?: boolean | null
@@ -137,7 +135,6 @@ export type Database = {
         Update: {
           character_id?: number
           created_at?: string | null
-          estimated_value?: number | null
           id?: string
           is_blueprint_copy?: boolean | null
           is_singleton?: boolean | null
@@ -617,32 +614,10 @@ export type Database = {
         }
         Relationships: []
       }
-      market_prices_cache: {
-        Row: {
-          adjusted_price: number | null
-          average_price: number | null
-          last_updated: string | null
-          type_id: number
-        }
-        Insert: {
-          adjusted_price?: number | null
-          average_price?: number | null
-          last_updated?: string | null
-          type_id: number
-        }
-        Update: {
-          adjusted_price?: number | null
-          average_price?: number | null
-          last_updated?: string | null
-          type_id?: number
-        }
-        Relationships: []
-      }
       member_audit_assets: {
         Row: {
           character_id: number
           created_at: string | null
-          estimated_value: number | null
           id: string
           is_blueprint_copy: boolean | null
           is_singleton: boolean | null
@@ -658,7 +633,6 @@ export type Database = {
         Insert: {
           character_id: number
           created_at?: string | null
-          estimated_value?: number | null
           id?: string
           is_blueprint_copy?: boolean | null
           is_singleton?: boolean | null
@@ -674,7 +648,6 @@ export type Database = {
         Update: {
           character_id?: number
           created_at?: string | null
-          estimated_value?: number | null
           id?: string
           is_blueprint_copy?: boolean | null
           is_singleton?: boolean | null
@@ -1138,7 +1111,6 @@ export type Database = {
           sync_errors: Json | null
           sync_progress: Json | null
           sync_status: string | null
-          total_assets_value: number | null
           total_sp: number | null
           unallocated_sp: number | null
           updated_at: string | null
@@ -1164,7 +1136,6 @@ export type Database = {
           sync_errors?: Json | null
           sync_progress?: Json | null
           sync_status?: string | null
-          total_assets_value?: number | null
           total_sp?: number | null
           unallocated_sp?: number | null
           updated_at?: string | null
@@ -1190,7 +1161,6 @@ export type Database = {
           sync_errors?: Json | null
           sync_progress?: Json | null
           sync_status?: string | null
-          total_assets_value?: number | null
           total_sp?: number | null
           unallocated_sp?: number | null
           updated_at?: string | null

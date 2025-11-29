@@ -9,7 +9,6 @@ interface AssetMetrics {
   total_items: number;
   unique_types: number;
   locations_count: number;
-  total_value?: number; // Phase 8: Add total value
 }
 
 export function AssetsCard() {
@@ -19,7 +18,6 @@ export function AssetsCard() {
     total_items: 0,
     unique_types: 0,
     locations_count: 0,
-    total_value: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -42,12 +40,6 @@ export function AssetsCard() {
         .single();
 
       if (characters?.character_id) {
-        const { data: metadata } = await supabase
-          .from('member_audit_metadata')
-          .select('total_assets_value')
-          .eq('character_id', characters.character_id)
-          .single();
-
         const { data: assets } = await supabase
           .from('member_audit_assets')
           .select('type_id, location_id, quantity')
@@ -62,7 +54,6 @@ export function AssetsCard() {
             total_items: totalItems,
             unique_types: uniqueTypes,
             locations_count: locationsCount,
-            total_value: metadata?.total_assets_value || 0
           });
         }
       }
@@ -79,7 +70,6 @@ export function AssetsCard() {
       total: 'Total Items',
       types: 'Unique Types',
       locations: 'Locations',
-      value: 'Est. Value',
       diversification: 'Diversification',
       risk: 'Concentration Risk',
       good: 'Good',
@@ -91,7 +81,6 @@ export function AssetsCard() {
       total: 'Всего предметов',
       types: 'Уникальных типов',
       locations: 'Локаций',
-      value: 'Оценка стоимости',
       diversification: 'Диверсификация',
       risk: 'Риск концентрации',
       good: 'Хорошая',
@@ -99,13 +88,6 @@ export function AssetsCard() {
       loading: 'Загрузка...'
     }
   }[language];
-
-  const formatISK = (value: number) => {
-    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`;
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
-    if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`;
-    return value.toFixed(0);
-  };
 
   // Calculate qualitative indicators
   const diversification = metrics.locations_count >= 10 ? t.good : 
@@ -158,17 +140,6 @@ export function AssetsCard() {
             </div>
             <span className="text-lg font-bold">{metrics.locations_count}</span>
           </div>
-
-          {/* Phase 8: Display estimated value */}
-          {metrics.total_value !== undefined && metrics.total_value > 0 && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Coins className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{t.value}</span>
-              </div>
-              <span className="text-lg font-bold">~{formatISK(metrics.total_value)} ISK</span>
-            </div>
-          )}
         </div>
 
         {/* Qualitative Indicators */}

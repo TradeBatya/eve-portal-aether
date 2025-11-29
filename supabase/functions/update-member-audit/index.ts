@@ -511,33 +511,6 @@ function getActivityName(activityId: number): string {
   return activities[activityId] || `Activity ${activityId}`;
 }
 
-// Phase 7: Fetch market prices from ESI
-async function fetchMarketPrices(): Promise<Map<number, number>> {
-  const prices = new Map<number, number>();
-  
-  try {
-    console.log('[MarketPrices] Fetching prices from ESI...');
-    const response = await fetch('https://esi.evetech.net/latest/markets/prices/');
-    
-    if (!response.ok) {
-      console.error('[MarketPrices] ESI request failed:', response.statusText);
-      return prices;
-    }
-
-    const data = await response.json();
-    console.log(`[MarketPrices] Fetched ${data.length} prices`);
-    
-    data.forEach((item: any) => {
-      prices.set(item.type_id, item.average_price || 0);
-    });
-    
-  } catch (error: any) {
-    console.error('[MarketPrices] Failed to fetch:', error);
-  }
-  
-  return prices;
-}
-
 // MODULE: Assets
 async function updateAssets(characterId: number, supabase: any): Promise<ModuleResult> {
   console.log('[Module:Assets] Starting update...');
@@ -551,9 +524,6 @@ async function updateAssets(characterId: number, supabase: any): Promise<ModuleR
 
   console.log(`[Module:Assets] Fetched ${res.data.length} assets`);
 
-  // Phase 7: Fetch market prices
-  const marketPrices = await fetchMarketPrices();
-
   // Resolve type names
   const typeIds = [...new Set(res.data.map((a: any) => a.type_id))] as number[];
   const typeNames = await resolveTypeNames(typeIds);
@@ -564,13 +534,9 @@ async function updateAssets(characterId: number, supabase: any): Promise<ModuleR
     .eq('character_id', characterId);
 
   let updated = 0;
-  let totalValue = 0;
   
   for (const asset of res.data) {
-    const price = marketPrices.get(asset.type_id) || 0;
     const quantity = asset.quantity || 1;
-    const estimatedValue = price * quantity;
-    totalValue += estimatedValue;
 
     const { error } = await supabase.from('member_audit_assets').insert({
       character_id: characterId,
@@ -581,29 +547,12 @@ async function updateAssets(characterId: number, supabase: any): Promise<ModuleR
       quantity: quantity,
       is_singleton: asset.is_singleton || false,
       is_blueprint_copy: asset.is_blueprint_copy || false,
-      estimated_value: estimatedValue, // Phase 7: Add estimated value
     });
 
     if (!error) updated++;
   }
 
-  // Phase 7: Update total_assets_value in metadata
-  const { data: charData } = await supabase
-    .from('eve_characters')
-    .select('user_id')
-    .eq('character_id', characterId)
-    .single();
-
-  await supabase.from('member_audit_metadata').upsert({
-    character_id: characterId,
-    user_id: charData?.user_id,
-    total_assets_value: totalValue,
-    last_update_at: new Date().toISOString(),
-  }, {
-    onConflict: 'character_id',
-  });
-
-  console.log(`[Module:Assets] Updated ${updated} assets with total value: ${totalValue.toFixed(2)} ISK`);
+  console.log(`[Module:Assets] Updated ${updated} assets`);
   return { success: true, updated };
 }
 

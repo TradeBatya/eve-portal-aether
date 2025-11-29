@@ -14,7 +14,6 @@ export interface MemberAuditMetadata {
   enabled_modules: Record<string, boolean>;
   total_sp: number;
   unallocated_sp: number;
-  total_assets_value: number;
   wallet_balance: number;
   created_at: string;
   updated_at: string;

@@ -38,7 +38,6 @@ interface LocationGroup {
   location_type: string;
   assets: Asset[];
   total_items: number;
-  estimated_value?: number;
 }
 
 export const AssetManager = () => {
@@ -100,7 +99,6 @@ export const AssetManager = () => {
             is_singleton: asset.isSingleton,
           }],
           total_items: asset.quantity,
-          estimated_value: asset.estimatedValue || 0, // Phase 8: Include value
         });
       } else {
         const group = groups.get(asset.locationId)!;
@@ -112,7 +110,6 @@ export const AssetManager = () => {
           is_singleton: asset.isSingleton,
         });
         group.total_items += asset.quantity;
-        group.estimated_value = (group.estimated_value || 0) + (asset.estimatedValue || 0);
       }
     });
 
@@ -192,17 +189,6 @@ export const AssetManager = () => {
     [locationGroups]
   );
 
-  const totalValue = useMemo(() =>
-    locationGroups.reduce((sum, group) => sum + (group.estimated_value || 0), 0),
-    [locationGroups]
-  );
-
-  const formatISK = (value: number) => {
-    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`;
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
-    if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`;
-    return value.toFixed(0);
-  };
 
   if (!selectedCharacter) {
     return (
@@ -233,7 +219,6 @@ export const AssetManager = () => {
             </CardTitle>
             <CardDescription>
               {selectedCharacter.character_name} • {locationGroups.length} {language === 'en' ? 'locations' : 'локаций'} • {totalAssets.toLocaleString()} {language === 'en' ? 'items' : 'предметов'}
-              {totalValue > 0 && ` • ~${formatISK(totalValue)} ISK`}
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -298,15 +283,12 @@ export const AssetManager = () => {
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         )}
                         <MapPin className="h-4 w-4 text-primary" />
-                        <div>
-                          <div className="font-medium">{group.location_name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {group.total_items.toLocaleString()} {language === 'en' ? 'items' : 'предметов'}
-                            {group.estimated_value && group.estimated_value > 0 && (
-                              <> • ~{formatISK(group.estimated_value)} ISK</>
-                            )}
+                          <div>
+                            <div className="font-medium">{group.location_name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {group.total_items.toLocaleString()} {language === 'en' ? 'items' : 'предметов'}
+                            </div>
                           </div>
-                        </div>
                       </div>
                       <Badge variant="secondary">
                         {group.location_type}
