@@ -10,7 +10,6 @@ export interface Asset {
   quantity: number;
   isSingleton: boolean;
   isBlueprintCopy?: boolean;
-  estimatedValue?: number; // Phase 5: Add estimated value
 }
 
 export interface AssetLocation {
@@ -25,7 +24,6 @@ export interface AssetSummary {
   totalItems: number;
   uniqueTypes: number;
   locationCount: number;
-  totalValue: number; // Phase 5: Add total estimated value
   locations: AssetLocation[];
 }
 
@@ -55,7 +53,6 @@ export class AssetsAdapter extends BaseAdapter {
       quantity: asset.quantity,
       isSingleton: asset.is_singleton,
       isBlueprintCopy: asset.is_blueprint_copy,
-      estimatedValue: 0 // Will be calculated below
     }));
 
     // Resolve type names
@@ -82,23 +79,6 @@ export class AssetsAdapter extends BaseAdapter {
         asset.locationType = 'unknown';
       }
     });
-
-    // Phase 5: Calculate estimated value using market prices
-    try {
-      const { marketPricesService } = await import('../MarketPricesService');
-      const marketPrices = await marketPricesService.getPrices();
-      
-      assets.forEach(asset => {
-        const price = marketPrices.get(asset.typeId);
-        asset.estimatedValue = price 
-          ? price.average_price * asset.quantity 
-          : 0;
-      });
-      
-      this.log(`Calculated estimated values for ${assets.length} assets`);
-    } catch (error) {
-      console.error('[AssetsAdapter] Failed to calculate asset values:', error);
-    }
 
     return assets;
   }
@@ -176,14 +156,10 @@ export class AssetsAdapter extends BaseAdapter {
     const totalItems = locations.reduce((sum, loc) => sum + loc.totalItems, 0);
     
     const uniqueTypes = new Set<number>();
-    let totalValue = 0; // Phase 5: Calculate total value
     
     locations.forEach(loc => {
       loc.assets.forEach(asset => {
         uniqueTypes.add(asset.typeId);
-        if (asset.estimatedValue) {
-          totalValue += asset.estimatedValue;
-        }
       });
     });
 
@@ -191,7 +167,6 @@ export class AssetsAdapter extends BaseAdapter {
       totalItems,
       uniqueTypes: uniqueTypes.size,
       locationCount: locations.length,
-      totalValue, // Phase 5: Include total value
       locations: locations.slice(0, 10) // Top 10 locations
     };
   }

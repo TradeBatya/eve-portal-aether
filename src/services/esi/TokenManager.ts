@@ -36,7 +36,12 @@ export class TokenManager {
    * Get valid token with automatic refresh if needed
    * Analogue of Django-ESI get_token_for_character
    */
-  async getValidToken(characterId: number): Promise<string> {
+  async getValidToken(characterId: number | null | undefined): Promise<string> {
+    // Phase 2: Null-safe character ID validation
+    if (!characterId || typeof characterId !== 'number') {
+      throw new Error('Invalid character ID provided');
+    }
+
     try {
       // Check if refresh is already in progress
       if (this.refreshQueue.has(characterId)) {
@@ -48,7 +53,7 @@ export class TokenManager {
         .from('esi_service_tokens')
         .select('access_token, expires_at, refresh_token')
         .eq('character_id', characterId)
-        .single();
+        .maybeSingle(); // Phase 2: Use maybeSingle for null-safety
 
       if (tokenData) {
         const validation = this.validateToken(tokenData.expires_at);
@@ -65,9 +70,9 @@ export class TokenManager {
       // Fallback to eve_characters
       const { data: charData } = await supabase
         .from('eve_characters')
-        .select('access_token, expires_at, refresh_token')
+        .select('access_token, expires_at, refresh_token, scopes')
         .eq('character_id', characterId)
-        .single();
+        .maybeSingle(); // Phase 2: Use maybeSingle for null-safety
 
       if (!charData) {
         throw new Error(`No token found for character ${characterId}`);
@@ -93,7 +98,16 @@ export class TokenManager {
   /**
    * Validate if token is still valid
    */
-  private validateToken(expiresAt: string): TokenValidation {
+  private validateToken(expiresAt: string | null | undefined): TokenValidation {
+    // Phase 2: Null-safe validation
+    if (!expiresAt) {
+      return {
+        isValid: false,
+        expiresIn: 0,
+        needsRefresh: false
+      };
+    }
+
     const expiryTime = new Date(expiresAt).getTime();
     const now = Date.now();
     const expiresIn = expiryTime - now;
@@ -160,13 +174,14 @@ export class TokenManager {
    */
   async validateScopes(characterId: number, requiredScopes: string[]): Promise<boolean> {
     if (requiredScopes.length === 0) return true;
+    if (!characterId || typeof characterId !== 'number') return false; // Phase 2: Null-safe
 
     try {
       const { data: tokenData } = await supabase
         .from('esi_service_tokens')
         .select('scopes')
         .eq('character_id', characterId)
-        .single();
+        .maybeSingle(); // Phase 2: Use maybeSingle
 
       if (!tokenData) {
         // Try eve_characters
@@ -174,13 +189,13 @@ export class TokenManager {
           .from('eve_characters')
           .select('scopes')
           .eq('character_id', characterId)
-          .single();
+          .maybeSingle(); // Phase 2: Use maybeSingle
 
         if (!charData) return false;
-        return this.checkScopes(charData.scopes, requiredScopes);
+        return this.checkScopes(charData.scopes || [], requiredScopes);
       }
 
-      return this.checkScopes(tokenData.scopes, requiredScopes);
+      return this.checkScopes(tokenData.scopes || [], requiredScopes);
 
     } catch (error) {
       console.error(`Scope validation failed for character ${characterId}:`, error);
@@ -188,7 +203,8 @@ export class TokenManager {
     }
   }
 
-  private checkScopes(availableScopes: string[], requiredScopes: string[]): boolean {
+  private checkScopes(availableScopes: string[] | null | undefined, requiredScopes: string[]): boolean {
+    if (!availableScopes || !Array.isArray(availableScopes)) return false; // Phase 2: Null-safe
     return requiredScopes.every(scope => availableScopes.includes(scope));
   }
 
