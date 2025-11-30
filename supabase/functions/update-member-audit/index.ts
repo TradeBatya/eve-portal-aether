@@ -608,11 +608,41 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Update sync status
+    // Phase 4: Check if sync already in progress (Race condition prevention)
+    const { data: existingSync } = await supabase
+      .from('member_audit_metadata')
+      .select('sync_status, last_update_at')
+      .eq('character_id', character_id)
+      .maybeSingle();
+
+    if (existingSync?.sync_status === 'syncing') {
+      // Check if sync is stuck (older than 5 minutes)
+      const lastUpdate = new Date(existingSync.last_update_at).getTime();
+      const now = Date.now();
+      const timeElapsed = now - lastUpdate;
+      const SYNC_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+      if (timeElapsed < SYNC_TIMEOUT) {
+        console.log(`[MemberAudit] Sync already in progress for character ${character_id}, skipping...`);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Sync already in progress',
+            message: 'Another sync operation is currently running for this character',
+            character_id 
+          }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        console.log(`[MemberAudit] Previous sync stuck for character ${character_id}, continuing...`);
+      }
+    }
+
+    // Update sync status with lock
     await supabase.from('member_audit_metadata').upsert({
       character_id,
       sync_status: 'syncing',
       sync_progress: { started_at: new Date().toISOString() },
+      last_update_at: new Date().toISOString(),
     }, {
       onConflict: 'character_id',
     });

@@ -76,6 +76,12 @@ class EsiCoreService {
       // Generate cache key
       const cacheKey = this.generateCacheKey(endpoint, method, body, characterId);
 
+      // Phase 4: Request deduplication - check if same request is already in flight
+      if (this.requestQueue.has(cacheKey)) {
+        console.log(`[ESI] Deduplicating request: ${endpoint}`);
+        return await this.requestQueue.get(cacheKey)!;
+      }
+
       // Check cache
       if (useCache && method === 'GET') {
         const cached = await this.getCachedData<T>(cacheKey);
@@ -85,25 +91,35 @@ class EsiCoreService {
         }
       }
 
-      // Execute request
-      const response = await this.executeRequest<T>(endpoint, {
-        characterId,
-        method,
-        body,
-        retryCount
-      });
+      // Execute request with deduplication queue
+      const requestPromise = (async () => {
+        const response = await this.executeRequest<T>(endpoint, {
+          characterId,
+          method,
+          body,
+          retryCount
+        });
 
-      // Cache result
-      if (useCache && response.data && method === 'GET') {
-        const cacheTtl = ttl || this.getDefaultTtl(endpoint);
-        await this.cacheData(cacheKey, endpoint, characterId, response.data, cacheTtl);
+        // Cache result
+        if (useCache && response.data && method === 'GET') {
+          const cacheTtl = ttl || this.getDefaultTtl(endpoint);
+          await this.cacheData(cacheKey, endpoint, characterId, response.data, cacheTtl);
+        }
+
+        return {
+          data: response.data,
+          fromCache: false,
+          headers: response.headers
+        };
+      })();
+
+      this.requestQueue.set(cacheKey, requestPromise);
+      
+      try {
+        return await requestPromise;
+      } finally {
+        this.requestQueue.delete(cacheKey);
       }
-
-      return {
-        data: response.data,
-        fromCache: false,
-        headers: response.headers
-      };
 
     } catch (error: any) {
       this.requestStats.failed++;
