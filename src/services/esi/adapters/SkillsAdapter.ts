@@ -32,7 +32,11 @@ export interface SkillQueueItem {
  */
 export class SkillsAdapter extends BaseAdapter {
 
-  async getSkills(characterId: number): Promise<SkillData> {
+  async getSkills(characterId: number | undefined | null): Promise<SkillData> {
+    if (!characterId || characterId <= 0) {
+      throw new Error('Invalid characterId provided');
+    }
+
     await this.validateToken(characterId, ['esi-skills.read_skills.v1']);
     this.log(`Fetching skills for character ${characterId}`);
 

@@ -18,13 +18,17 @@ export abstract class BaseAdapter {
    */
   protected async fetchWithRetry<T>(
     endpoint: string,
-    characterId: number,
+    characterId: number | undefined | null,
     options: {
       ttl?: number;
       retryCount?: number;
       useCache?: boolean;
     } = {}
   ): Promise<T> {
+    if (!characterId || characterId <= 0) {
+      throw new Error('Invalid characterId provided for ESI request');
+    }
+
     const {
       ttl = 3600,
       retryCount = 2,
@@ -50,11 +54,15 @@ export abstract class BaseAdapter {
   /**
    * Validate token before making requests
    */
-  protected async validateToken(characterId: number, scopes: string[]): Promise<void> {
+  protected async validateToken(characterId: number | undefined | null, scopes: string[]): Promise<void> {
+    if (!characterId || characterId <= 0) {
+      throw new Error('Invalid characterId provided for token validation');
+    }
+
     try {
       await this.tokenManager.getValidToken(characterId);
 
-      if (scopes.length > 0) {
+      if (scopes && scopes.length > 0) {
         const hasScopes = await this.tokenManager.validateScopes(characterId, scopes);
         if (!hasScopes) {
           throw new Error(`Missing required scopes: ${scopes.join(', ')}`);
