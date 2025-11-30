@@ -17,12 +17,20 @@ class EdgeTokenManager {
   private static REFRESH_BUFFER = 10 * 60 * 1000; // 10 minutes
 
   static async getValidToken(supabase: any, characterId: number): Promise<string> {
+    if (!characterId || characterId <= 0) {
+      throw new Error('Invalid characterId provided');
+    }
+
     // Try esi_service_tokens first
-    const { data: tokenData } = await supabase
+    const { data: tokenData, error: tokenError } = await supabase
       .from('esi_service_tokens')
       .select('access_token, expires_at, refresh_token')
       .eq('character_id', characterId)
-      .single();
+      .maybeSingle();
+
+    if (tokenError && tokenError.code !== 'PGRST116') {
+      console.error('[TokenManager] Error fetching token:', tokenError);
+    }
 
     if (tokenData) {
       const expiryTime = new Date(tokenData.expires_at).getTime();
@@ -43,11 +51,16 @@ class EdgeTokenManager {
     }
 
     // Fallback to eve_characters
-    const { data: charData } = await supabase
+    const { data: charData, error: charError } = await supabase
       .from('eve_characters')
       .select('access_token, expires_at, refresh_token')
       .eq('character_id', characterId)
-      .single();
+      .maybeSingle();
+
+    if (charError) {
+      console.error('[TokenManager] Error fetching character token:', charError);
+      throw new Error(`Failed to get token for character ${characterId}: ${charError.message}`);
+    }
 
     if (!charData) {
       throw new Error(`No token found for character ${characterId}`);
@@ -178,6 +191,11 @@ class EdgeCacheManager {
   }
 
   static async set(supabase: any, key: string, data: any, ttl: number, options: { tags?: string[]; priority?: number } = {}): Promise<void> {
+    if (!key || !data) {
+      console.warn('[Cache] Invalid cache set - missing key or data');
+      return;
+    }
+
     try {
       const endpoint = key.split(':')[0] || 'unknown';
       const characterIdMatch = key.match(/char:(\d+)/);

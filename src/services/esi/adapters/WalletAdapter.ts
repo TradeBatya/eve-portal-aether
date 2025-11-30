@@ -39,7 +39,11 @@ export interface WalletTransaction {
  */
 export class WalletAdapter extends BaseAdapter {
   
-  async getBalance(characterId: number): Promise<WalletBalance> {
+  async getBalance(characterId: number | undefined | null): Promise<WalletBalance> {
+    if (!characterId || characterId <= 0) {
+      throw new Error('Invalid characterId provided');
+    }
+
     // Phase 2: Don't block request if scopes missing - Edge Function will validate
     try {
       await this.validateToken(characterId, ['esi-wallet.read_character_wallet.v1']);
