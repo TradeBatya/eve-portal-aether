@@ -116,11 +116,14 @@ export class NameResolver {
     const results = new Map<number, string>();
 
     try {
+      const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY 
+        || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/universe-resolver`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+          'apikey': apiKey
         },
         body: JSON.stringify({ ids })
       });

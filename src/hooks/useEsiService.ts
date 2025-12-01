@@ -75,11 +75,12 @@ export function useEsiService<T>(
   }, [endpoint, characterId, enabled, method, JSON.stringify(body), ...dependencies]);
 
   const refetch = async () => {
+    const previousData = data; // Preserve previous data
     setLoading(true);
     setError(null);
     
     try {
-      // Clear cache for this specific endpoint
+      // Fetch fresh data
       const response = await esiService.request<T>(endpoint, {
         characterId,
         ttl,
@@ -91,6 +92,8 @@ export function useEsiService<T>(
       setData(response.data);
       setFromCache(false);
     } catch (err: any) {
+      // Restore previous data on error
+      setData(previousData);
       setError(err.message || 'Failed to fetch data');
       console.error('ESI Service refetch error:', err);
     } finally {
@@ -138,16 +141,20 @@ export function useCharacterService(characterId: number | undefined, dataTypes: 
   const refresh = async () => {
     if (!characterId) return;
     
+    const previousData = data; // Preserve previous data
     setLoading(true);
     setError(null);
     
     try {
-      // Clear memory cache
-      esiService.clearCache('memory');
-      
+      // Fetch new data WITHOUT clearing cache first
       const characterData = await esiService.getCharacterData(characterId, dataTypes);
       setData(characterData);
+      
+      // Clear memory cache ONLY after successful fetch
+      esiService.clearCache('memory');
     } catch (err: any) {
+      // Restore previous data on error
+      setData(previousData);
       setError(err.message || 'Failed to refresh character data');
       console.error('Character service refresh error:', err);
     } finally {

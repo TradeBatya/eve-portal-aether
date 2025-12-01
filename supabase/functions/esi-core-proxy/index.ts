@@ -168,7 +168,7 @@ class EdgeCacheManager {
         .select('data, expires_at, access_count')
         .eq('cache_key', key)
         .gt('expires_at', new Date().toISOString())
-        .single();
+        .maybeSingle();
 
       if (error || !data) return null;
 

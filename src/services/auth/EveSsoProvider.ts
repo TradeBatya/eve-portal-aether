@@ -122,11 +122,14 @@ export class EveSsoProvider {
 
     try {
       // Exchange code for tokens via edge function
+      const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY 
+        || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/eve-auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+          'apikey': apiKey
         },
         body: JSON.stringify({ code, userId })
       });

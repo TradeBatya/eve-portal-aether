@@ -237,75 +237,105 @@ class EsiCoreService {
   }
 
   // Private implementation methods
+  /**
+   * Execute request with automatic retry for temporary errors
+   */
+  private async executeWithRetry<T>(
+    fn: () => Promise<T>,
+    retryCount: number = 2,
+    delay: number = 1000
+  ): Promise<T> {
+    for (let attempt = 0; attempt <= retryCount; attempt++) {
+      try {
+        return await fn();
+      } catch (error: any) {
+        if (attempt === retryCount) throw error;
+        
+        // Retry only for temporary errors (rate limit, server errors)
+        if ([420, 502, 503, 504].includes(error.statusCode)) {
+          const backoff = delay * Math.pow(2, attempt);
+          console.log(`⏳ Retrying after ${backoff}ms (attempt ${attempt + 1}/${retryCount})...`);
+          await new Promise(r => setTimeout(r, backoff));
+          continue;
+        }
+        
+        throw error; // Don't retry for 401, 403, 404
+      }
+    }
+    throw new Error('Max retries exceeded');
+  }
+
   private async executeBulkResolve(ids: number[]): Promise<Map<number, string>> {
-    const resultMap = new Map<number, string>();
-    const missingIds: number[] = [];
+    return this.executeWithRetry(async () => {
+      const resultMap = new Map<number, string>();
+      const missingIds: number[] = [];
 
-    // ESI int32 limits: -2,147,483,648 to 2,147,483,647
-    const INT32_MAX = 2147483647;
-    const INT32_MIN = -2147483648;
+      // ESI int32 limits: -2,147,483,648 to 2,147,483,647
+      const INT32_MAX = 2147483647;
+      const INT32_MIN = -2147483648;
 
-    // Validate and filter IDs (silently - warnings already at collection stage)
-    const validIds = ids.filter(id => {
-      return id && 
-             Number.isInteger(id) && 
-             id > 0 && 
-             id >= INT32_MIN && 
-             id <= INT32_MAX;
-    });
+      // Validate and filter IDs (silently - warnings already at collection stage)
+      const validIds = ids.filter(id => {
+        return id && 
+               Number.isInteger(id) && 
+               id > 0 && 
+               id >= INT32_MIN && 
+               id <= INT32_MAX;
+      });
 
-    if (validIds.length === 0) {
-      return resultMap;
-    }
-
-    // Check cache for each ID
-    for (const id of validIds) {
-      const cachedName = await this.getCachedName(id);
-      if (cachedName) {
-        resultMap.set(id, cachedName);
-      } else {
-        missingIds.push(id);
-      }
-    }
-
-    // Request missing IDs from ESI (batch in chunks of 1000)
-    if (missingIds.length > 0) {
-      const BATCH_SIZE = 1000;
-      const batches = [];
-      
-      for (let i = 0; i < missingIds.length; i += BATCH_SIZE) {
-        batches.push(missingIds.slice(i, i + BATCH_SIZE));
+      if (validIds.length === 0) {
+        return resultMap;
       }
 
-      for (const batch of batches) {
-        try {
-          const response = await this.request<Array<{id: number; name: string; category: string}>>(
-            '/universe/names/', 
-            {
-              method: 'POST',
-              body: batch,
-              useCache: true,
-              ttl: 30 * 24 * 60 * 60 // 30 days
-            }
-          );
-
-          // Cache results
-          if (Array.isArray(response.data)) {
-            for (const item of response.data) {
-              if (item && item.id && item.name) {
-                resultMap.set(item.id, item.name);
-                await this.cacheName(item.id, item.name, item.category || 'unknown');
-              }
-            }
-          }
-        } catch (error: any) {
-          console.error(`Bulk resolve failed for batch: ${error.message}`);
-          // Continue with next batch
+      // Check cache for each ID
+      for (const id of validIds) {
+        const cachedName = await this.getCachedName(id);
+        if (cachedName) {
+          resultMap.set(id, cachedName);
+        } else {
+          missingIds.push(id);
         }
       }
-    }
 
-    return resultMap;
+      // Request missing IDs from ESI (batch in chunks of 1000)
+      if (missingIds.length > 0) {
+        const BATCH_SIZE = 1000;
+        const batches = [];
+        
+        for (let i = 0; i < missingIds.length; i += BATCH_SIZE) {
+          batches.push(missingIds.slice(i, i + BATCH_SIZE));
+        }
+
+        for (const batch of batches) {
+          try {
+            const response = await this.request<Array<{id: number; name: string; category: string}>>(
+              '/universe/names/', 
+              {
+                method: 'POST',
+                body: batch,
+                useCache: true,
+                ttl: 30 * 24 * 60 * 60 // 30 days
+              }
+            );
+
+            // Cache results
+            if (Array.isArray(response.data)) {
+              for (const item of response.data) {
+                if (item && item.id && item.name) {
+                  resultMap.set(item.id, item.name);
+                  await this.cacheName(item.id, item.name, item.category || 'unknown');
+                }
+              }
+            }
+          } catch (error: any) {
+            console.error(`Bulk resolve failed for batch: ${error.message}`);
+            // Continue with next batch
+          }
+        }
+      }
+
+      return resultMap;
+    }, 2);
   }
 
   private async executeRequest<T>(
