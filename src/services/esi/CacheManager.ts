@@ -372,8 +372,41 @@ export class CacheManager {
 
     console.log(`[CacheManager] Preloading ${module} for character ${characterId}...`);
     
-    // Module will be loaded by ESI adapters when accessed
-    // This just ensures the cache key pattern is ready
+    // Map modules to ESI endpoints
+    const endpoints: Record<string, string> = {
+      basic: `/characters/${characterId}/`,
+      location: `/characters/${characterId}/location/`,
+      ship: `/characters/${characterId}/ship/`,
+      wallet: `/characters/${characterId}/wallet/`,
+      skills: `/characters/${characterId}/skills/`,
+      skill_queue: `/characters/${characterId}/skillqueue/`,
+      assets: `/characters/${characterId}/assets/`,
+      contacts: `/characters/${characterId}/contacts/`,
+      implants: `/characters/${characterId}/implants/`
+    };
+
+    const endpoint = endpoints[module];
+    if (!endpoint) return;
+
+    try {
+      // Actually load data through esi-core-proxy
+      const { createClient } = await import('@supabase/supabase-js');
+      const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY 
+        || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      
+      const supabaseClient = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        apiKey
+      );
+
+      await supabaseClient.functions.invoke('esi-core-proxy', {
+        body: { endpoint, method: 'GET', characterId }
+      });
+
+      console.log(`✓ Preloaded ${module} for character ${characterId}`);
+    } catch (error) {
+      console.error(`Preload failed for ${module}:`, error);
+    }
   }
 
   /**

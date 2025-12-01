@@ -43,11 +43,7 @@ export class MemberAuditAdapter extends BaseAdapter {
   async refreshCharacterData(characterId: number): Promise<void> {
     console.log(`[MemberAuditAdapter] Starting refresh for character ${characterId}`);
     try {
-      // Clear memory cache to force fresh data
-      console.log('[MemberAuditAdapter] Clearing memory cache...');
-      this.esiService.clearCache('memory');
-      
-      // Fetch fresh data
+      // Fetch fresh data FIRST (without clearing cache)
       console.log('[MemberAuditAdapter] Fetching complete audit data...');
       const auditData = await this.getCompleteAuditData(characterId);
       console.log('[MemberAuditAdapter] Audit data fetched:', Object.keys(auditData));
@@ -68,6 +64,10 @@ export class MemberAuditAdapter extends BaseAdapter {
       
       console.log('[MemberAuditAdapter] Updating contacts...');
       await this.updateContacts(characterId, auditData.contacts);
+
+      // Clear memory cache ONLY after successful update
+      console.log('[MemberAuditAdapter] Clearing memory cache after successful update...');
+      this.esiService.clearCache('memory');
 
       console.log(`[MemberAuditAdapter] Successfully refreshed data for character ${characterId}`);
     } catch (error: any) {
@@ -130,17 +130,8 @@ export class MemberAuditAdapter extends BaseAdapter {
 
     // Calculate total assets value
     if (auditData.assets && Array.isArray(auditData.assets)) {
-      const { data: assetRecords } = await supabase
-        .from('character_assets')
-        .select('estimated_value, quantity')
-        .eq('character_id', characterId);
-
-      if (assetRecords) {
-        const totalValue = assetRecords.reduce((sum: number, asset: any) => {
-          return sum + ((asset.estimated_value || 0) * (asset.quantity || 1));
-        }, 0);
-        metadata.total_assets_value = totalValue;
-      }
+      // Asset value removed as per Phase 1 - focus on asset management not valuation
+      metadata.total_assets_value = null;
     }
 
     console.log('[MemberAuditAdapter] Writing metadata to database...');

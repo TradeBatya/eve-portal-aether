@@ -224,44 +224,6 @@ export class TokenManager {
   }
 
   /**
-   * Sync token from eve_characters to esi_service_tokens
-   * Phase 1: Explicitly sync scopes and reset validation failures
-   */
-  private async syncToken(characterId: number, charData: any): Promise<void> {
-    try {
-      // Get scopes from eve_characters if not provided
-      let scopes = charData.scopes || [];
-      
-      if (!scopes.length) {
-        const { data } = await supabase
-          .from('eve_characters')
-          .select('scopes')
-          .eq('character_id', characterId)
-          .single();
-        scopes = data?.scopes || [];
-      }
-
-      await supabase
-        .from('esi_service_tokens')
-        .upsert({
-          character_id: characterId,
-          access_token: charData.access_token,
-          refresh_token: charData.refresh_token,
-          expires_at: charData.expires_at,
-          scopes: scopes, // Explicitly set scopes
-          token_type: 'Bearer',
-          last_validated_at: new Date().toISOString(),
-          validation_failures: 0, // Reset failures
-          auto_refresh_enabled: true // Enable auto-refresh
-        });
-      
-      console.log(`[TokenManager] Synced token with ${scopes.length} scopes for character ${characterId}`);
-    } catch (error) {
-      console.error(`Token sync failed for character ${characterId}:`, error);
-    }
-  }
-
-  /**
    * Manually sync scopes from eve_characters to esi_service_tokens
    * Phase 1: Public method for manual scope synchronization
    */
@@ -340,15 +302,81 @@ export class TokenManager {
   /**
    * Force token refresh for a character
    */
-  async forceRefresh(characterId: number): Promise<void> {
-    const { data } = await supabase
-      .from('esi_service_tokens')
-      .select('refresh_token')
-      .eq('character_id', characterId)
-      .single();
+  async forceRefresh(characterId: number): Promise<boolean> {
+    try {
+      const { data } = await supabase
+        .from('esi_service_tokens')
+        .select('refresh_token')
+        .eq('character_id', characterId)
+        .maybeSingle();
 
-    if (data?.refresh_token) {
-      await this.refreshToken(characterId, data.refresh_token);
+      if (!data?.refresh_token) {
+        console.error(`No refresh token found for character ${characterId}`);
+        return false;
+      }
+
+      const newToken = await this.refreshToken(characterId, data.refresh_token);
+      return !!newToken;
+    } catch (error) {
+      console.error(`Force refresh failed for character ${characterId}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Reactivate a deactivated token by syncing scopes and resetting failures
+   */
+  async reactivateToken(characterId: number): Promise<void> {
+    try {
+      // Sync scopes from eve_characters
+      await this.syncScopesFromEveCharacters(characterId);
+      
+      // Reset validation failures and enable auto-refresh
+      await supabase
+        .from('esi_service_tokens')
+        .update({
+          validation_failures: 0,
+          auto_refresh_enabled: true,
+          last_validated_at: new Date().toISOString()
+        })
+        .eq('character_id', characterId);
+
+      console.log(`✓ Token reactivated for character ${characterId}`);
+    } catch (error) {
+      console.error(`Failed to reactivate token for character ${characterId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sync token from eve_characters table
+   */
+  private async syncToken(characterId: number, charData: any): Promise<void> {
+    try {
+      // Always get scopes from eve_characters as source of truth
+      const { data: eveChar } = await supabase
+        .from('eve_characters')
+        .select('scopes, access_token, refresh_token, expires_at')
+        .eq('character_id', characterId)
+        .maybeSingle();
+
+      if (eveChar) {
+        await supabase
+          .from('esi_service_tokens')
+          .upsert({
+            character_id: characterId,
+            access_token: eveChar.access_token,
+            refresh_token: eveChar.refresh_token,
+            expires_at: eveChar.expires_at,
+            scopes: eveChar.scopes || [],
+            validation_failures: 0,
+            auto_refresh_enabled: true
+          });
+
+        console.log(`✓ Token synced for character ${characterId} with ${eveChar.scopes?.length || 0} scopes`);
+      }
+    } catch (error) {
+      console.error(`Failed to sync token for character ${characterId}:`, error);
     }
   }
 
