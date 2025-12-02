@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
+  
+  // Track preloaded users to prevent duplicate preloads
+  const preloadedUsersRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -30,9 +33,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        await checkAdminRole(session.user.id);
-        await updateLastActivity(session.user.id);
-        await preloadCharacterData(session.user.id);
+        // Use setTimeout(0) to defer Supabase calls and prevent deadlocks
+        setTimeout(() => {
+          checkAdminRole(session.user.id);
+          updateLastActivity(session.user.id);
+          preloadCharacterData(session.user.id);
+        }, 0);
       }
       setLoading(false);
     };
@@ -41,22 +47,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        (async () => {
-          setSession(session);
-          setUser(session?.user ?? null);
+        // Synchronous state updates only
+        setSession(session);
+        setUser(session?.user ?? null);
 
-          if (session?.user) {
-            await checkAdminRole(session.user.id);
-            await updateLastActivity(session.user.id);
+        if (session?.user) {
+          // Defer async operations with setTimeout to prevent deadlocks
+          setTimeout(() => {
+            checkAdminRole(session.user.id);
+            updateLastActivity(session.user.id);
             
-            // Preload data on sign in
+            // Only preload on SIGNED_IN event, not on every state change
             if (event === 'SIGNED_IN') {
-              await preloadCharacterData(session.user.id);
+              preloadCharacterData(session.user.id);
             }
-          } else {
-            setIsAdmin(false);
-          }
-        })();
+          }, 0);
+        } else {
+          setIsAdmin(false);
+          // Clear preloaded users on sign out
+          preloadedUsersRef.current.clear();
+        }
       }
     );
 
@@ -90,6 +100,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const preloadCharacterData = async (userId: string) => {
+    // Prevent duplicate preloads for the same user
+    if (preloadedUsersRef.current.has(userId)) {
+      console.log(`[AuthContext] User ${userId} already preloaded, skipping`);
+      return;
+    }
+    
+    preloadedUsersRef.current.add(userId);
+    
     try {
       // Get user's main character
       const { data: characters } = await supabase
@@ -103,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const mainCharacter = characters[0];
         console.log(`[AuthContext] Preloading data for character ${mainCharacter.character_id}`);
         
-        // Preload critical data in background
+        // Preload critical data in background - CacheManager handles deduplication
         cacheManager.preload(mainCharacter.character_id, [
           'basic',
           'location',
@@ -119,6 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Failed to preload character data:', error);
+      // Remove from preloaded set so it can be retried
+      preloadedUsersRef.current.delete(userId);
     }
   };
 
