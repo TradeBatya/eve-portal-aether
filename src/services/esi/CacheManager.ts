@@ -62,6 +62,10 @@ export class CacheManager {
   private readonly MEMORY_TTL = 2 * 60 * 1000; // 2 minutes
   private readonly MAX_MEMORY_ENTRIES = 1000;
   
+  // Protection against multiple simultaneous preloads
+  private preloadInProgress = new Set<number>();
+  private preloadedCharacters = new Set<number>();
+  
   private stats = {
     hits: 0,
     misses: 0,
@@ -318,7 +322,20 @@ export class CacheManager {
    * Priority 3 (10s delay): assets, contacts
    */
   async preload(characterId: number, modules: string[]): Promise<void> {
-    console.log(`[CacheManager] Preloading cache for character ${characterId}...`, modules);
+    // Prevent multiple preloads for the same character
+    if (this.preloadInProgress.has(characterId)) {
+      console.log(`[CacheManager] Preload already in progress for character ${characterId}, skipping`);
+      return;
+    }
+    
+    // Prevent re-preloading characters that were already preloaded in this session
+    if (this.preloadedCharacters.has(characterId)) {
+      console.log(`[CacheManager] Character ${characterId} already preloaded in this session, skipping`);
+      return;
+    }
+    
+    this.preloadInProgress.add(characterId);
+    console.log(`[CacheManager] Starting preload for character ${characterId}...`, modules);
     
     const priority1 = modules.filter(m => ['basic', 'location', 'ship'].includes(m));
     const priority2 = modules.filter(m => ['wallet', 'skills', 'skill_queue'].includes(m));
@@ -352,26 +369,21 @@ export class CacheManager {
           console.log(`[CacheManager] Priority 3 loaded: ${priority3.join(', ')}`);
         }, 5000);
       }
+      
+      // Mark as preloaded
+      this.preloadedCharacters.add(characterId);
     } catch (error) {
       console.error('[CacheManager] Preload error:', error);
+    } finally {
+      this.preloadInProgress.delete(characterId);
     }
   }
 
   /**
    * Preload a specific module for a character
+   * Uses singleton Supabase client to avoid multiple GoTrueClient instances
    */
   private async preloadModule(characterId: number, module: string): Promise<void> {
-    const cacheKey = `char:${characterId}:${module}`;
-    
-    // Check if already cached
-    const cached = await this.get(cacheKey);
-    if (cached) {
-      console.log(`[CacheManager] ${module} already cached for character ${characterId}`);
-      return;
-    }
-
-    console.log(`[CacheManager] Preloading ${module} for character ${characterId}...`);
-    
     // Map modules to ESI endpoints
     const endpoints: Record<string, string> = {
       basic: `/characters/${characterId}/`,
@@ -388,24 +400,29 @@ export class CacheManager {
     const endpoint = endpoints[module];
     if (!endpoint) return;
 
-    try {
-      // Actually load data through esi-core-proxy
-      const { createClient } = await import('@supabase/supabase-js');
-      const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY 
-        || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      
-      const supabaseClient = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        apiKey
-      );
+    // Use the same cache key format as esi-core-proxy
+    const cacheKey = `${endpoint}:char:${characterId}`;
+    
+    // Check if already cached in memory first (quick check)
+    const memoryCached = this.getFromMemory(cacheKey);
+    if (memoryCached !== null) {
+      console.log(`[CacheManager] ${module} already in memory cache for character ${characterId}`);
+      return;
+    }
 
-      await supabaseClient.functions.invoke('esi-core-proxy', {
+    try {
+      // Use singleton Supabase client - no new client creation!
+      const { data, error } = await supabase.functions.invoke('esi-core-proxy', {
         body: { endpoint, method: 'GET', characterId }
       });
 
-      console.log(`✓ Preloaded ${module} for character ${characterId}`);
+      if (error) {
+        console.error(`[CacheManager] Preload failed for ${module}:`, error);
+      } else {
+        console.log(`✓ Preloaded ${module} for character ${characterId}`);
+      }
     } catch (error) {
-      console.error(`Preload failed for ${module}:`, error);
+      console.error(`[CacheManager] Preload exception for ${module}:`, error);
     }
   }
 
