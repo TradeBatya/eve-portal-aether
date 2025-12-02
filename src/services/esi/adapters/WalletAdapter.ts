@@ -80,6 +80,12 @@ export class WalletAdapter extends BaseAdapter {
       5 // Max 5 pages
     );
 
+    // Null safety: ensure data is an array
+    if (!data || !Array.isArray(data)) {
+      this.log(`No journal data for character ${characterId}`);
+      return [];
+    }
+
     let entries = data.map(entry => ({
       id: entry.id,
       date: entry.date,
@@ -115,6 +121,12 @@ export class WalletAdapter extends BaseAdapter {
       { ttl: 300 }
     );
 
+    // Null safety: ensure data is an array
+    if (!data || !Array.isArray(data)) {
+      this.log(`No transactions data for character ${characterId}`);
+      return [];
+    }
+
     const transactions = data.slice(0, limit).map(tx => ({
       transactionId: tx.transaction_id,
       date: tx.date,
@@ -128,13 +140,15 @@ export class WalletAdapter extends BaseAdapter {
       isPersonal: tx.is_personal
     }));
 
-    // Resolve type names
-    const typeIds = transactions.map(tx => tx.typeId);
-    const typeNames = await this.nameResolver.getNames(typeIds);
-    
-    transactions.forEach(tx => {
-      tx.typeName = typeNames.get(tx.typeId) || `[${tx.typeId}]`;
-    });
+    // Resolve type names if we have transactions
+    if (transactions.length > 0) {
+      const typeIds = transactions.map(tx => tx.typeId);
+      const typeNames = await this.nameResolver.getNames(typeIds);
+      
+      transactions.forEach(tx => {
+        tx.typeName = typeNames.get(tx.typeId) || `[${tx.typeId}]`;
+      });
+    }
 
     return transactions;
   }
